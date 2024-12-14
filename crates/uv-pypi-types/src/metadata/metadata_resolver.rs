@@ -29,6 +29,7 @@ pub struct ResolutionMetadata {
     pub requires_dist: Vec<Requirement<VerbatimParsedUrl>>,
     pub requires_python: Option<VersionSpecifiers>,
     pub provides_extras: Vec<ExtraName>,
+    pub classifiers: Option<Vec<String>>,
 }
 
 /// From <https://github.com/PyO3/python-pkginfo-rs/blob/d719988323a0cfea86d4737116d7917f30e819e2/src/metadata.rs#LL78C2-L91C26>
@@ -68,6 +69,9 @@ impl ResolutionMetadata {
                 }
             })
             .collect::<Vec<_>>();
+        let classifiers = headers
+            .get_all_values("Classifier")
+            .collect::<Vec<_>>();
 
         Ok(Self {
             name,
@@ -75,6 +79,7 @@ impl ResolutionMetadata {
             requires_dist,
             requires_python,
             provides_extras,
+            classifiers: Some(classifiers),
         })
     }
 
@@ -141,6 +146,9 @@ impl ResolutionMetadata {
                 }
             })
             .collect::<Vec<_>>();
+        let classifiers = headers
+            .get_all_values("Classifiers")
+            .collect::<Vec<_>>();
 
         Ok(Self {
             name,
@@ -148,6 +156,7 @@ impl ResolutionMetadata {
             requires_dist,
             requires_python,
             provides_extras,
+            classifiers: Some(classifiers),
         })
     }
 
@@ -231,4 +240,6 @@ mod tests {
         assert_eq!(meta.version, Version::new([1, 0]));
         assert_eq!(meta.requires_dist, vec!["foo".parse().unwrap()]);
     }
+
+    // TODO: write test cases for checking classifier information
 }
