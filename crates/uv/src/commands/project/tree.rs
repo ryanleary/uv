@@ -203,6 +203,16 @@ pub(crate) async fn tree(
                 tags: None,
             };
 
+            // let build_dist = &BuiltDist::DirectUrl(DirectUrlBuiltDist {
+            //     filename,
+            //     location: archive.url,
+            //     url: args.url,
+            // })
+            // client.client.wheel_metadata(built_dist, &capabilities);
+
+            // for package in packages:
+            //     package
+
             let reporter = LatestVersionReporter::from(printer).with_length(packages.len() as u64);
 
             // Fetch the latest version for each package.
@@ -216,6 +226,7 @@ pub(crate) async fn tree(
                 })
                 .buffer_unordered(concurrency.downloads);
 
+
             let mut map = PackageMap::default();
             while let Some(entry) = fetches.next().await.transpose()? {
                 let Some((package, version)) = entry else {
@@ -223,6 +234,7 @@ pub(crate) async fn tree(
                     continue;
                 };
                 reporter.on_fetch_version(package.name(), &version);
+
                 if version > *package.version() {
                     map.insert(package.clone(), version);
                 }
@@ -233,6 +245,11 @@ pub(crate) async fn tree(
     } else {
         PackageMap::default()
     };
+
+    for package in lock.packages() {
+        print!("{:?} :: {:?}\n", package.name().as_str(), package.license());
+        // package.name().
+    }
 
     // Render the tree.
     let tree = TreeDisplay::new(

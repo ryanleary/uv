@@ -187,6 +187,8 @@ pub(crate) fn pip_show(
                 )?;
             }
         }
+        let classifiers = distribution.metadata().expect("Metadata is missing");
+        writeln!(printer.stdout(), "Classifiers: {}", classifiers.classifiers.unwrap_or(vec![]).join(", "))?;
 
         // If requests, show the list of installed files.
         if files {

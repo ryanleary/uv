@@ -1615,6 +1615,8 @@ pub struct Package {
     dependency_groups: BTreeMap<GroupName, Vec<Dependency>>,
     /// The exact requirements from the package metadata.
     metadata: PackageMetadata,
+    /// The cached set of classifiers that describe the package
+    classifiers: Option<Vec<String>>,
 }
 
 impl Package {
@@ -1672,6 +1674,9 @@ impl Package {
                 requires_dist,
                 dependency_groups,
             },
+
+            // classifiers: Some(vec!["from annotated dist".to_string()])
+            classifiers: annotated_dist.metadata.as_ref().expect("metadata is present").classifiers.clone(),
         })
     }
 
@@ -2251,6 +2256,18 @@ impl Package {
         &self.id.name
     }
 
+    pub fn license(&self) -> String {
+        if self.classifiers.is_none() {
+            return "No classifiers set".to_string();
+        } 
+        let classifiers = self.classifiers.clone().unwrap();
+        if classifiers.is_empty() {
+            return "Unknown!".to_string()
+        } else {
+            return classifiers[0].clone();
+        }
+    }
+
     /// Returns the [`Version`] of the package.
     pub fn version(&self) -> &Version {
         &self.id.version
@@ -2393,6 +2410,7 @@ impl PackageWire {
                 .into_iter()
                 .map(|(group, deps)| Ok((group, unwire_deps(deps)?)))
                 .collect::<Result<_, LockError>>()?,
+            classifiers: Some(vec!["from package wire".to_string()])
         })
     }
 }
