@@ -22,10 +22,7 @@ use uv_distribution_filename::{
     BuildTag, DistExtension, ExtensionError, SourceDistExtension, WheelFilename,
 };
 use uv_distribution_types::{
-    BuiltDist, DependencyMetadata, DirectUrlBuiltDist, DirectUrlSourceDist, DirectorySourceDist,
-    Dist, DistributionMetadata, FileLocation, GitSourceDist, IndexLocations, IndexUrl, Name,
-    PathBuiltDist, PathSourceDist, RegistryBuiltDist, RegistryBuiltWheel, RegistrySourceDist,
-    RemoteSource, ResolvedDist, StaticMetadata, ToUrlError, UrlString,
+    BuiltDist, DependencyMetadata, DirectUrlBuiltDist, DirectUrlSourceDist, DirectorySourceDist, Dist, DistributionMetadata, FileLocation, GitSourceDist, IndexCapabilities, IndexLocations, IndexUrl, Name, PathBuiltDist, PathSourceDist, RegistryBuiltDist, RegistryBuiltWheel, RegistrySourceDist, RemoteSource, ResolvedDist, StaticMetadata, ToUrlError, UrlString
 };
 use uv_fs::{relative_to, PortablePath, PortablePathBuf};
 use uv_git::{GitReference, GitSha, RepositoryReference, ResolvedRepositoryReference};
@@ -2258,16 +2255,50 @@ impl Package {
         &self.id.name
     }
 
-    pub fn license(&self) -> String {
-        if self.classifiers.is_none() {
-            return "Classifiers unset (None)".to_string();
-        } 
-        let classifiers = self.classifiers.clone().unwrap();
-        if classifiers.is_empty() {
-            return "Classifiers empty".to_string()
+    pub async fn license(&self, 
+        workspace: &Workspace,
+        tags: &Tags,
+        client: &uv_client::RegistryClient) -> String {
+
+        // parse license information from classifiers
+        // it is possible that the classifiers field isn't set yet because of the source
+        // of the package. the package may be populated from the lock file OR the resolver.
+        // in the case of the former, the package data is incomplete and we must fetch
+        // the additional data ourselves.
+        if !self.classifiers.is_none() {
+            let x =  self.classifiers.as_ref().unwrap();
+            return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
         } else {
-            return classifiers.join(", ");
-        }
+            let capabilities = IndexCapabilities::default();
+            // client.wheel_metadata(self.wheels[0], &capabilities);
+    
+            let dist = self.to_dist(
+                workspace.install_path(),
+                // When validating, it's okay to use wheels that don't match the current platform.
+                TagPolicy::Preferred(tags),
+                // When validating, it's okay to use (e.g.) a source distribution with `--no-build`.
+                // We're just trying to determine whether the lockfile is up-to-date. If we end
+                // up needing to build a source distribution in order to do so, below, we'll error
+                // there.
+                &BuildOptions::default(),
+            );
+    
+            if let Ok(generated_dist) = dist {
+                // match generated_dist {
+                //     Dist::Built(built_dist) => {
+                        let x = client.wheel_metadata_new(&generated_dist, &capabilities).await;
+                        // println!("{:?}", x);
+                        if let Ok(meta) = x {
+                            let x = meta.classifiers.unwrap_or(vec![]);
+                            return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ");
+                        } else {
+                            todo!()
+                            // return String::from("[unable to detect license (meta lookup failed)]");
+                        }
+            } else {
+                todo!()
+            }
+        };
     }
 
     /// Returns the [`Version`] of the package.
@@ -2412,7 +2443,7 @@ impl PackageWire {
                 .into_iter()
                 .map(|(group, deps)| Ok((group, unwire_deps(deps)?)))
                 .collect::<Result<_, LockError>>()?,
-            classifiers: Some(vec!["from package wire".to_string()])
+            classifiers: None // we don't store classifier information in the wire format
         })
     }
 }

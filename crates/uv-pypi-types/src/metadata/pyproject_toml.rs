@@ -161,6 +161,7 @@ struct PyprojectTomlWire {
     dependencies: Option<Vec<String>>,
     optional_dependencies: Option<IndexMap<ExtraName, Vec<String>>>,
     dynamic: Option<Vec<String>>,
+    classifiers: Option<Vec<String>>,
 }
 
 impl TryFrom<PyprojectTomlWire> for Project {
@@ -175,6 +176,7 @@ impl TryFrom<PyprojectTomlWire> for Project {
             dependencies: wire.dependencies,
             optional_dependencies: wire.optional_dependencies,
             dynamic: wire.dynamic,
+            classifiers: wire.classifiers
         })
     }
 }

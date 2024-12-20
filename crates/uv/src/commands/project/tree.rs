@@ -11,7 +11,7 @@ use uv_configuration::{
     Concurrency, DevGroupsSpecification, LowerBound, PreviewMode, TargetTriple, TrustedHost,
 };
 use uv_dispatch::SharedState;
-use uv_distribution_types::{BuiltDist, DirectUrlBuiltDist, IndexCapabilities};
+use uv_distribution_types::IndexCapabilities;
 use uv_pep508::PackageName;
 use uv_python::{PythonDownloads, PythonPreference, PythonRequest, PythonVersion};
 use uv_resolver::{PackageMap, TreeDisplay};
@@ -184,7 +184,7 @@ pub(crate) async fn tree(
             let capabilities = IndexCapabilities::default();
 
             // Initialize the registry client.
-            let client = RegistryClientBuilder::new(
+            let client: uv_client::RegistryClient = RegistryClientBuilder::new(
                 cache.clone().with_refresh(Refresh::All(Timestamp::now())),
             )
             .native_tls(native_tls)
@@ -193,6 +193,11 @@ pub(crate) async fn tree(
             .allow_insecure_host(allow_insecure_host.to_vec())
             .build();
 
+            println!("LICENSES!!!");
+            for p in lock.packages() {
+                    let x = p.license(&workspace, interpreter.as_ref().expect("need an interpreter").tags()?, &client);
+                    println!("{} :: {}", p.name(), x.await);
+            }
 
             // Initialize the client to fetch the latest version of each package.
             let client = LatestClient {
@@ -204,10 +209,7 @@ pub(crate) async fn tree(
                 tags: None,
             };
 
-            // client.client.wheel_metadata(built_dist, &capabilities);
 
-            // for package in packages:
-            //     package
 
             let reporter = LatestVersionReporter::from(printer).with_length(packages.len() as u64);
 
@@ -222,7 +224,6 @@ pub(crate) async fn tree(
                 })
                 .buffer_unordered(concurrency.downloads);
 
-
             let mut map = PackageMap::default();
             while let Some(entry) = fetches.next().await.transpose()? {
                 let Some((package, version)) = entry else {
@@ -230,7 +231,6 @@ pub(crate) async fn tree(
                     continue;
                 };
                 reporter.on_fetch_version(package.name(), &version);
-
                 if version > *package.version() {
                     map.insert(package.clone(), version);
                 }
@@ -242,50 +242,7 @@ pub(crate) async fn tree(
         PackageMap::default()
     };
 
-    let ResolverSettings {
-        index_locations: _,
-        index_strategy: _,
-        keyring_provider,
-        resolution: _,
-        prerelease: _,
-        dependency_metadata: _,
-        config_setting: _,
-        no_build_isolation: _,
-        no_build_isolation_package: _,
-        exclude_newer: _,
-        link_mode: _,
-        upgrade: _,
-        build_options: _,
-        sources: _,
-    } = &settings;
-    let capabilities = IndexCapabilities::default();
-
-    // Initialize the registry client.
-    let client = RegistryClientBuilder::new(
-        cache.clone().with_refresh(Refresh::All(Timestamp::now())),
-    )
-    .native_tls(native_tls)
-    .connectivity(connectivity)
-    .keyring(*keyring_provider)
-    .allow_insecure_host(allow_insecure_host.to_vec())
-    .build();
-    for package in lock.packages() {
-
-        // let build_dist = &BuiltDist::DirectUrl(DirectUrlBuiltDist {
-        //     filename,
-        //     location: archive.url,
-        //     url: args.url,
-        // })
-        let build_dist = &BuiltDist::DirectUrl(DirectUrlBuiltDist {
-            filename,
-            location: archive.url,
-            url: args.url,
-        })
-
-        client.wheel_metadata(built_dist, capabilities)
-        print!("{:?} :: {:?}\n", package.name().as_str(), package.license());
-        // package.name().
-    }
+    
 
     // Render the tree.
     let tree = TreeDisplay::new(

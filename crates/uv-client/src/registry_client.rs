@@ -17,7 +17,7 @@ use uv_configuration::KeyringProviderType;
 use uv_configuration::{IndexStrategy, TrustedHost};
 use uv_distribution_filename::{DistFilename, SourceDistFilename, WheelFilename};
 use uv_distribution_types::{
-    BuiltDist, File, FileLocation, Index, IndexCapabilities, IndexUrl, IndexUrls, Name,
+    BuiltDist, Dist, File, FileLocation, Index, IndexCapabilities, IndexUrl, IndexUrls, Name, Resolution
 };
 use uv_metadata::{read_metadata_async_seek, read_metadata_async_stream};
 use uv_normalize::PackageName;
@@ -436,6 +436,19 @@ impl RegistryClient {
         OwnedArchive::from_unarchived(&metadata)
     }
 
+    #[instrument(skip_all, fields(% dist))]
+    pub async fn wheel_metadata_new(
+        &self,
+        dist: &Dist,
+        capabilities: &IndexCapabilities,
+    ) -> Result<ResolutionMetadata, Error> {
+        match dist {
+    Dist::Built(built_dist) => self.wheel_metadata(built_dist, capabilities).await,
+    Dist::Source(source_dist) => todo!(),
+}
+
+    }
+
     /// Fetch the metadata for a remote wheel file.
     ///
     /// For a remote wheel, we try the following ways to fetch the metadata:
@@ -448,7 +461,7 @@ impl RegistryClient {
         built_dist: &BuiltDist,
         capabilities: &IndexCapabilities,
     ) -> Result<ResolutionMetadata, Error> {
-        let metadata = match &built_dist {
+        let metadata: ResolutionMetadata = match &built_dist {
             BuiltDist::Registry(wheels) => {
                 #[derive(Debug, Clone)]
                 enum WheelLocation {
