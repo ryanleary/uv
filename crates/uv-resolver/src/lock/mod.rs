@@ -110,6 +110,7 @@ pub struct Lock {
 impl Lock {
     /// Initialize a [`Lock`] from a [`ResolverOutput`].
     pub fn from_resolution(resolution: &ResolverOutput, root: &Path) -> Result<Self, LockError> {
+        println!("LOCK FROM RESOLUTION");
         let mut packages = BTreeMap::new();
         let requires_python = resolution.requires_python.clone();
 
@@ -318,6 +319,7 @@ impl Lock {
         supported_environments: Vec<MarkerTree>,
         fork_markers: Vec<UniversalMarker>,
     ) -> Result<Self, LockError> {
+        println!("LOCK FROM NEW");
         // Put all dependencies for each package in a canonical order and
         // check for duplicates.
         for package in &mut packages {
@@ -2258,13 +2260,13 @@ impl Package {
 
     pub fn license(&self) -> String {
         if self.classifiers.is_none() {
-            return "No classifiers set".to_string();
+            return "Classifiers unset (None)".to_string();
         } 
         let classifiers = self.classifiers.clone().unwrap();
         if classifiers.is_empty() {
-            return "Unknown!".to_string()
+            return "Classifiers empty".to_string()
         } else {
-            return classifiers[0].clone();
+            return classifiers.join(", ");
         }
     }
 
