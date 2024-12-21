@@ -53,7 +53,7 @@ impl DependencyMetadata {
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
-                classifiers: Some(classifiers), // TODO: come back
+                classifiers: Some(classifiers), // TODO(RL): come back
             })
         } else {
             // If no version was requested (i.e., it's a direct URL dependency), allow a single
@@ -74,7 +74,7 @@ impl DependencyMetadata {
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
-                classifiers: Some(classifiers), // TODO: come back
+                classifiers: Some(classifiers), // TODO(RL): come back
             })
         }
     }

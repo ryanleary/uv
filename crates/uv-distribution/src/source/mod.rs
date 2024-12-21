@@ -2448,9 +2448,9 @@ async fn read_egg_info(
 
     // Parse the metadata.
     let metadata = Metadata12::parse_metadata(&content).map_err(Error::PkgInfo)?;
-    // TODO: don't know if we can do this or not
+    println!("RL: parsing metadata12");
+    // TODO(RL): don't know if we can do this or not
     let metadata23 = Metadata23::parse(&content).map_err(Error::PkgInfo)?;
-    let classifiers = vec!["test metadata23".to_string()];
 
     // Combine the sources.
     Ok(ResolutionMetadata {
@@ -2459,7 +2459,7 @@ async fn read_egg_info(
         requires_python: metadata.requires_python,
         requires_dist: requires_txt.requires_dist,
         provides_extras: requires_txt.provides_extras,
-        classifiers: Some(classifiers), // TODO: come back
+        classifiers: Some(metadata23.classifiers),
     })
 }
 

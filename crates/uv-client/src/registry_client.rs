@@ -6,18 +6,20 @@ use reqwest::{Client, Response, StatusCode};
 use reqwest_middleware::ClientWithMiddleware;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
 use tracing::{info_span, instrument, trace, warn, Instrument};
 use url::Url;
+
+use fs_err::tokio as fs;
 
 use uv_cache::{Cache, CacheBucket, CacheEntry, WheelCache};
 use uv_configuration::KeyringProviderType;
 use uv_configuration::{IndexStrategy, TrustedHost};
 use uv_distribution_filename::{DistFilename, SourceDistFilename, WheelFilename};
 use uv_distribution_types::{
-    BuiltDist, Dist, File, FileLocation, Index, IndexCapabilities, IndexUrl, IndexUrls, Name, Resolution
+    BuiltDist, DependencyMetadata, Dist, File, FileLocation, Index, IndexCapabilities, IndexUrl, IndexUrls, Name, PathBuiltDist, Resolution, UrlString
 };
 use uv_metadata::{read_metadata_async_seek, read_metadata_async_stream};
 use uv_normalize::PackageName;
@@ -436,17 +438,21 @@ impl RegistryClient {
         OwnedArchive::from_unarchived(&metadata)
     }
 
+
+
     #[instrument(skip_all, fields(% dist))]
     pub async fn wheel_metadata_new(
         &self,
         dist: &Dist,
         capabilities: &IndexCapabilities,
     ) -> Result<ResolutionMetadata, Error> {
-        match dist {
-    Dist::Built(built_dist) => self.wheel_metadata(built_dist, capabilities).await,
-    Dist::Source(source_dist) => todo!(),
-}
 
+        match dist {
+            Dist::Built(built_dist) => self.wheel_metadata(built_dist, capabilities).await,
+            Dist::Source(source_dist) => {
+                todo!("source distribution");
+            },
+        }
     }
 
     /// Fetch the metadata for a remote wheel file.

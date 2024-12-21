@@ -2270,33 +2270,24 @@ impl Package {
             return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
         } else {
             let capabilities = IndexCapabilities::default();
-            // client.wheel_metadata(self.wheels[0], &capabilities);
-    
+            // Get the metadata for the distribution (see above for explanation of tags/capabilities).
             let dist = self.to_dist(
                 workspace.install_path(),
-                // When validating, it's okay to use wheels that don't match the current platform.
                 TagPolicy::Preferred(tags),
-                // When validating, it's okay to use (e.g.) a source distribution with `--no-build`.
-                // We're just trying to determine whether the lockfile is up-to-date. If we end
-                // up needing to build a source distribution in order to do so, below, we'll error
-                // there.
                 &BuildOptions::default(),
             );
     
             if let Ok(generated_dist) = dist {
-                // match generated_dist {
-                //     Dist::Built(built_dist) => {
-                        let x = client.wheel_metadata_new(&generated_dist, &capabilities).await;
-                        // println!("{:?}", x);
-                        if let Ok(meta) = x {
-                            let x = meta.classifiers.unwrap_or(vec![]);
-                            return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ");
-                        } else {
-                            todo!()
-                            // return String::from("[unable to detect license (meta lookup failed)]");
-                        }
+                let x = client.wheel_metadata_new(&generated_dist, &capabilities).await;
+                // println!("{:?}", x);
+                if let Ok(meta) = x {
+                    let x = meta.classifiers.unwrap_or(vec![]);
+                    return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ");
+                } else {
+                    todo!("handle the case where package metadata lookup fails")
+                }
             } else {
-                todo!()
+                todo!("handle the case where package.to_dist fails")
             }
         };
     }

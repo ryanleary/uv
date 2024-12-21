@@ -11,6 +11,7 @@ use uv_configuration::{
     Concurrency, DevGroupsSpecification, LowerBound, PreviewMode, TargetTriple, TrustedHost,
 };
 use uv_dispatch::SharedState;
+use uv_distribution::DistributionDatabase;
 use uv_distribution_types::IndexCapabilities;
 use uv_pep508::PackageName;
 use uv_python::{PythonDownloads, PythonPreference, PythonRequest, PythonVersion};
@@ -193,10 +194,15 @@ pub(crate) async fn tree(
             .allow_insecure_host(allow_insecure_host.to_vec())
             .build();
 
+            // let dd = DistributionDatabase::new(&client, None, 4);
+
+
             println!("LICENSES!!!");
             for p in lock.packages() {
                     let x = p.license(&workspace, interpreter.as_ref().expect("need an interpreter").tags()?, &client);
                     println!("{} :: {}", p.name(), x.await);
+                    let y = settings.dependency_metadata.get(p.name(), Some(p.version()));
+                    println!("{:?}", y);
             }
 
             // Initialize the client to fetch the latest version of each package.
