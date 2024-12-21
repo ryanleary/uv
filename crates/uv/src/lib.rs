@@ -1637,7 +1637,7 @@ async fn run_project(
             // Initialize the cache.
             let cache = cache.init()?;
 
-            commands::tree(
+            commands::license(
                 project_dir,
                 args.dev,
                 args.locked,

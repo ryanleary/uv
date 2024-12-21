@@ -107,7 +107,6 @@ pub struct Lock {
 impl Lock {
     /// Initialize a [`Lock`] from a [`ResolverOutput`].
     pub fn from_resolution(resolution: &ResolverOutput, root: &Path) -> Result<Self, LockError> {
-        println!("LOCK FROM RESOLUTION");
         let mut packages = BTreeMap::new();
         let requires_python = resolution.requires_python.clone();
 
@@ -316,7 +315,6 @@ impl Lock {
         supported_environments: Vec<MarkerTree>,
         fork_markers: Vec<UniversalMarker>,
     ) -> Result<Self, LockError> {
-        println!("LOCK FROM NEW");
         // Put all dependencies for each package in a canonical order and
         // check for duplicates.
         for package in &mut packages {

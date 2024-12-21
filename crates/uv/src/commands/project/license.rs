@@ -11,6 +11,7 @@ use uv_configuration::{
     Concurrency, DevGroupsSpecification, LowerBound, PreviewMode, TargetTriple, TrustedHost,
 };
 use uv_dispatch::SharedState;
+use uv_distribution::DistributionDatabase;
 use uv_distribution_types::IndexCapabilities;
 use uv_pep508::PackageName;
 use uv_python::{PythonDownloads, PythonPreference, PythonRequest, PythonVersion};
@@ -32,7 +33,7 @@ use crate::settings::ResolverSettings;
 
 /// Run a command.
 #[allow(clippy::fn_params_excessive_bools)]
-pub(crate) async fn tree(
+pub(crate) async fn license(
     project_dir: &Path,
     dev: DevGroupsSpecification,
     locked: bool,
@@ -86,7 +87,7 @@ pub(crate) async fn tree(
                 connectivity,
                 native_tls,
                 allow_insecure_host,
-                &install_mirrors,
+                install_mirrors,
                 no_config,
                 cache,
                 printer,
@@ -111,7 +112,7 @@ pub(crate) async fn tree(
     // Update the lockfile, if necessary.
     let lock = match do_safe_lock(
         mode,
-        (&workspace).into(),
+        &workspace,
         settings.as_ref(),
         LowerBound::Allow,
         &state,
@@ -184,7 +185,7 @@ pub(crate) async fn tree(
             let capabilities = IndexCapabilities::default();
 
             // Initialize the registry client.
-            let client = RegistryClientBuilder::new(
+            let client: uv_client::RegistryClient = RegistryClientBuilder::new(
                 cache.clone().with_refresh(Refresh::All(Timestamp::now())),
             )
             .native_tls(native_tls)
@@ -192,6 +193,17 @@ pub(crate) async fn tree(
             .keyring(*keyring_provider)
             .allow_insecure_host(allow_insecure_host.to_vec())
             .build();
+
+            // let dd = DistributionDatabase::new(&client, None, 4);
+
+
+            println!("LICENSES!!!");
+            for p in lock.packages() {
+                    let x = p.license(&workspace, interpreter.as_ref().expect("need an interpreter").tags()?, &client);
+                    println!("{} :: {}", p.name(), x.await);
+                    let y = settings.dependency_metadata.get(p.name(), Some(p.version()));
+                    println!("{:?}", y);
+            }
 
             // Initialize the client to fetch the latest version of each package.
             let client = LatestClient {
@@ -202,6 +214,8 @@ pub(crate) async fn tree(
                 requires_python: lock.requires_python(),
                 tags: None,
             };
+
+
 
             let reporter = LatestVersionReporter::from(printer).with_length(packages.len() as u64);
 
@@ -233,6 +247,8 @@ pub(crate) async fn tree(
     } else {
         PackageMap::default()
     };
+
+    
 
     // Render the tree.
     let tree = TreeDisplay::new(
