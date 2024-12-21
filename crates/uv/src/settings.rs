@@ -13,11 +13,7 @@ use uv_cli::{
     ToolUpgradeArgs,
 };
 use uv_cli::{
-    AddArgs, ColorChoice, ExternalCommand, GlobalArgs, InitArgs, ListFormat, LockArgs, Maybe,
-    PipCheckArgs, PipCompileArgs, PipFreezeArgs, PipInstallArgs, PipListArgs, PipShowArgs,
-    PipSyncArgs, PipTreeArgs, PipUninstallArgs, PythonFindArgs, PythonInstallArgs, PythonListArgs,
-    PythonPinArgs, PythonUninstallArgs, RemoveArgs, RunArgs, SyncArgs, ToolDirArgs,
-    ToolInstallArgs, ToolListArgs, ToolRunArgs, ToolUninstallArgs, TreeArgs, VenvArgs,
+    AddArgs, ColorChoice, ExternalCommand, GlobalArgs, InitArgs, LicenseArgs, ListFormat, LockArgs, Maybe, PipCheckArgs, PipCompileArgs, PipFreezeArgs, PipInstallArgs, PipListArgs, PipShowArgs, PipSyncArgs, PipTreeArgs, PipUninstallArgs, PythonFindArgs, PythonInstallArgs, PythonListArgs, PythonPinArgs, PythonUninstallArgs, RemoveArgs, RunArgs, SyncArgs, ToolDirArgs, ToolInstallArgs, ToolListArgs, ToolRunArgs, ToolUninstallArgs, TreeArgs, VenvArgs
 };
 use uv_client::Connectivity;
 use uv_configuration::{
@@ -1295,6 +1291,75 @@ impl TreeSettings {
     /// Resolve the [`TreeSettings`] from the CLI and workspace configuration.
     pub(crate) fn resolve(args: TreeArgs, filesystem: Option<FilesystemOptions>) -> Self {
         let TreeArgs {
+            tree,
+            universal,
+            dev,
+            only_dev,
+            no_dev,
+            group,
+            no_group,
+            only_group,
+            all_groups,
+            locked,
+            frozen,
+            build,
+            resolver,
+            python_version,
+            python_platform,
+            python,
+        } = args;
+        let install_mirrors = filesystem
+            .clone()
+            .map(|fs| fs.install_mirrors.clone())
+            .unwrap_or_default();
+
+        Self {
+            dev: DevGroupsSpecification::from_args(
+                dev, no_dev, only_dev, group, no_group, only_group, all_groups,
+            ),
+            locked,
+            frozen,
+            universal,
+            depth: tree.depth,
+            prune: tree.prune,
+            package: tree.package,
+            no_dedupe: tree.no_dedupe,
+            invert: tree.invert,
+            outdated: tree.outdated,
+            python_version,
+            python_platform,
+            python: python.and_then(Maybe::into_option),
+            resolver: ResolverSettings::combine(resolver_options(resolver, build), filesystem),
+            install_mirrors,
+        }
+    }
+}
+
+/// The resolved settings to use for a `tree` invocation.
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, Clone)]
+pub(crate) struct LicenseSettings {
+    pub(crate) dev: DevGroupsSpecification,
+    pub(crate) locked: bool,
+    pub(crate) frozen: bool,
+    pub(crate) universal: bool,
+    pub(crate) depth: u8,
+    pub(crate) prune: Vec<PackageName>,
+    pub(crate) package: Vec<PackageName>,
+    pub(crate) no_dedupe: bool,
+    pub(crate) invert: bool,
+    pub(crate) outdated: bool,
+    pub(crate) python_version: Option<PythonVersion>,
+    pub(crate) python_platform: Option<TargetTriple>,
+    pub(crate) python: Option<String>,
+    pub(crate) install_mirrors: PythonInstallMirrors,
+    pub(crate) resolver: ResolverSettings,
+}
+
+impl LicenseSettings {
+    /// Resolve the [`LicenseSettings`] from the CLI and workspace configuration.
+    pub(crate) fn resolve(args: LicenseArgs, filesystem: Option<FilesystemOptions>) -> Self {
+        let LicenseArgs {
             tree,
             universal,
             dev,
