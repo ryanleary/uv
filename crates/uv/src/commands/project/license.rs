@@ -1,7 +1,10 @@
+use std::time::Instant;
 use std::path::Path;
 
 use anyhow::{Error, Result};
 
+
+use futures::StreamExt;
 use uv_cache::{Cache, Refresh};
 use uv_cache_info::Timestamp;
 use uv_client::{Connectivity, FlatIndexClient, RegistryClientBuilder};
@@ -13,7 +16,7 @@ use uv_distribution::DistributionDatabase;
 use uv_distribution_types::Index;
 use uv_pep508::PackageName;
 use uv_python::{PythonDownloads, PythonEnvironment, PythonPreference, PythonRequest, PythonVersion};
-use uv_resolver::{FlatIndex};
+use uv_resolver::{FlatIndex, LicenseDisplay, PackageMap};
 use uv_settings::PythonInstallMirrors;
 use uv_types::{BuildIsolation, HashStrategy};
 use uv_workspace::{DiscoveryOptions, Workspace};
@@ -222,14 +225,44 @@ pub(crate) async fn license(
     
     let database = DistributionDatabase::new(&client, &build_dispatch, concurrency.downloads);
 
-    for p in lock.packages() {
-        let x = p.license(
-            &workspace,
-            interpreter.as_ref().expect("need an interpreter").tags()?,
-            &database,
-        );
-        println!("{} :: {}", p.name(), x.await);
+    let mut licenses = PackageMap::default();
+
+    let interpret = interpreter.as_ref().expect("need an interpreter").tags()?;
+    let ws = &workspace;
+    let db= &database;
+    let mut fetches = futures::stream::iter(lock.packages())
+        .map(|(package)| async move {
+            let license = package.license(&ws.clone(), interpret, &db).await
+            else {
+                return Ok(None)
+            };
+            Ok::<Option<_>, Error>(Some((package, license)))
+        })
+        .buffer_unordered(concurrency.downloads);
+    while let Some(entry) = fetches.next().await.transpose()? {
+        let Some((package, license)) = entry else {
+            continue;
+        };
+        licenses.insert(package.clone(), license);
     }
+
+    // Render the tree.
+    let tree = LicenseDisplay::new(
+        &lock,
+        markers.as_ref(),
+        &licenses,
+        depth.into(),
+        &prune,
+        &package,
+        &dev.with_defaults(defaults),
+        no_dedupe,
+        invert,
+    );
+
+    print!("{tree}");
+
+    // let x = dev.with_defaults(defaults);
+    // println!("{:?}", x);
 
     Ok(ExitStatus::Success)
 }

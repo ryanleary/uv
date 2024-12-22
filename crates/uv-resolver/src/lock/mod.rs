@@ -51,6 +51,7 @@ use crate::{
 };
 
 mod installable;
+mod license;
 mod map;
 mod requirements_txt;
 mod tree;
