@@ -438,23 +438,6 @@ impl RegistryClient {
         OwnedArchive::from_unarchived(&metadata)
     }
 
-
-
-    #[instrument(skip_all, fields(% dist))]
-    pub async fn wheel_metadata_new(
-        &self,
-        dist: &Dist,
-        capabilities: &IndexCapabilities,
-    ) -> Result<ResolutionMetadata, Error> {
-
-        match dist {
-            Dist::Built(built_dist) => self.wheel_metadata(built_dist, capabilities).await,
-            Dist::Source(source_dist) => {
-                todo!("source distribution");
-            },
-        }
-    }
-
     /// Fetch the metadata for a remote wheel file.
     ///
     /// For a remote wheel, we try the following ways to fetch the metadata:

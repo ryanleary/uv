@@ -111,7 +111,7 @@ impl Metadata {
             requires_python: metadata.requires_python,
             provides_extras,
             dependency_groups,
-            classifiers: None
+            classifiers: metadata.classifiers
         })
     }
 }

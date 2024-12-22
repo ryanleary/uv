@@ -2253,10 +2253,10 @@ impl Package {
         &self.id.name
     }
 
-    pub async fn license(&self, 
+    pub async fn license<Context: BuildContext>(&self, 
         workspace: &Workspace,
         tags: &Tags,
-        client: &uv_client::RegistryClient) -> String {
+        database: &DistributionDatabase<'_, Context>) -> String {
 
         // parse license information from classifiers
         // it is possible that the classifiers field isn't set yet because of the source
@@ -2267,7 +2267,6 @@ impl Package {
             let x =  self.classifiers.as_ref().unwrap();
             return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
         } else {
-            let capabilities = IndexCapabilities::default();
             // Get the metadata for the distribution (see above for explanation of tags/capabilities).
             let dist = self.to_dist(
                 workspace.install_path(),
@@ -2276,10 +2275,11 @@ impl Package {
             );
     
             if let Ok(generated_dist) = dist {
-                let x = client.wheel_metadata_new(&generated_dist, &capabilities).await;
-                // println!("{:?}", x);
-                if let Ok(meta) = x {
-                    let x = meta.classifiers.unwrap_or(vec![]);
+                let hasher = HashStrategy::None;
+                let y = database.get_or_build_wheel_metadata(&generated_dist, hasher.get(&generated_dist)).await;
+                
+                if let Ok(meta) = y {
+                    let x = meta.metadata.classifiers.unwrap_or(vec![String::from("no classifiers")]);
                     return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ");
                 } else {
                     todo!("handle the case where package metadata lookup fails")
