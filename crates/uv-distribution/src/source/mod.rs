@@ -2448,8 +2448,6 @@ async fn read_egg_info(
 
     // Parse the metadata.
     let metadata = Metadata12::parse_metadata(&content).map_err(Error::PkgInfo)?;
-    println!("RL: parsing metadata12");
-    // TODO(RL): don't know if we can do this or not
     let metadata23 = Metadata23::parse(&content).map_err(Error::PkgInfo)?;
 
     // Combine the sources.

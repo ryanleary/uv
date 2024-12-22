@@ -187,9 +187,15 @@ pub(crate) fn pip_show(
                 )?;
             }
         }
-        // TODO(RL): do we want to show anything about this here?
-        let classifiers = distribution.metadata().expect("Metadata is missing");
-        // writeln!(printer.stdout(), "Classifiers: {}", classifiers.classifiers.unwrap_or(vec![]).join(", "))?;
+        if let Ok(meta) = distribution.metadata() {
+            if let Some(classifiers) = meta.classifiers {
+                if classifiers.is_empty() {
+                    writeln!(printer.stdout(), "Classifiers:")?;
+                } else {
+                    writeln!(printer.stdout(), "Classifiers: {}", classifiers.join(", "))?;
+                }
+            }
+        }
 
         // If requests, show the list of installed files.
         if files {

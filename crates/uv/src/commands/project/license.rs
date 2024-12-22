@@ -1,8 +1,6 @@
 use std::path::Path;
 
-use anstream::print;
 use anyhow::{Error, Result};
-use futures::StreamExt;
 
 use uv_cache::{Cache, Refresh};
 use uv_cache_info::Timestamp;
@@ -12,22 +10,20 @@ use uv_configuration::{
 };
 use uv_dispatch::{BuildDispatch, SharedState};
 use uv_distribution::DistributionDatabase;
-use uv_distribution_types::{Index, IndexCapabilities};
+use uv_distribution_types::Index;
 use uv_pep508::PackageName;
 use uv_python::{PythonDownloads, PythonEnvironment, PythonPreference, PythonRequest, PythonVersion};
-use uv_resolver::{FlatIndex, PackageMap, TreeDisplay};
+use uv_resolver::{FlatIndex};
 use uv_settings::PythonInstallMirrors;
 use uv_types::{BuildIsolation, HashStrategy};
 use uv_workspace::{DiscoveryOptions, Workspace};
 
-use crate::commands::pip::latest::LatestClient;
 use crate::commands::pip::loggers::DefaultResolveLogger;
 use crate::commands::pip::resolution_markers;
 use crate::commands::project::lock::{do_safe_lock, LockMode};
 use crate::commands::project::{
     default_dependency_groups, DependencyGroupsTarget, ProjectError, ProjectInterpreter,
 };
-use crate::commands::reporters::LatestVersionReporter;
 use crate::commands::{diagnostics, ExitStatus};
 use crate::printer::Printer;
 use crate::settings::ResolverSettings;

@@ -1659,6 +1659,11 @@ impl Package {
                 })
                 .collect::<Result<_, _>>()?
         };
+        let classifiers = annotated_dist
+            .metadata
+            .as_ref()
+            .expect("metadata is present")
+            .classifiers.clone();
         Ok(Package {
             id,
             sdist,
@@ -1671,9 +1676,7 @@ impl Package {
                 requires_dist,
                 dependency_groups,
             },
-
-            // classifiers: Some(vec!["from annotated dist".to_string()])
-            classifiers: annotated_dist.metadata.as_ref().expect("metadata is present").classifiers.clone(),
+            classifiers,
         })
     }
 

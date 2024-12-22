@@ -92,11 +92,11 @@ pub(crate) fn parse_pyproject_toml(
         );
         provides_extras.push(extra);
     }
-    let classifiers = project
+    let classifiers = Some(project
         .classifiers
         .unwrap_or_default()
         .into_iter()
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>());
 
     Ok(ResolutionMetadata {
         name,
@@ -104,7 +104,7 @@ pub(crate) fn parse_pyproject_toml(
         requires_dist,
         requires_python,
         provides_extras,
-        classifiers: Some(classifiers)
+        classifiers
     })
 }
 

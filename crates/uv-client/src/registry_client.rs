@@ -6,20 +6,18 @@ use reqwest::{Client, Response, StatusCode};
 use reqwest_middleware::ClientWithMiddleware;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 use tracing::{info_span, instrument, trace, warn, Instrument};
 use url::Url;
-
-use fs_err::tokio as fs;
 
 use uv_cache::{Cache, CacheBucket, CacheEntry, WheelCache};
 use uv_configuration::KeyringProviderType;
 use uv_configuration::{IndexStrategy, TrustedHost};
 use uv_distribution_filename::{DistFilename, SourceDistFilename, WheelFilename};
 use uv_distribution_types::{
-    BuiltDist, DependencyMetadata, Dist, File, FileLocation, Index, IndexCapabilities, IndexUrl, IndexUrls, Name, PathBuiltDist, Resolution, UrlString
+    BuiltDist, File, FileLocation, Index, IndexCapabilities, IndexUrl, IndexUrls, Name,
 };
 use uv_metadata::{read_metadata_async_seek, read_metadata_async_stream};
 use uv_normalize::PackageName;
@@ -450,7 +448,7 @@ impl RegistryClient {
         built_dist: &BuiltDist,
         capabilities: &IndexCapabilities,
     ) -> Result<ResolutionMetadata, Error> {
-        let metadata: ResolutionMetadata = match &built_dist {
+        let metadata = match &built_dist {
             BuiltDist::Registry(wheels) => {
                 #[derive(Debug, Clone)]
                 enum WheelLocation {

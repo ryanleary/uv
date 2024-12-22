@@ -69,9 +69,9 @@ impl ResolutionMetadata {
                 }
             })
             .collect::<Vec<_>>();
-        let classifiers = headers
+        let classifiers = Some(headers
             .get_all_values("Classifier")
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>());
 
         Ok(Self {
             name,
@@ -79,7 +79,7 @@ impl ResolutionMetadata {
             requires_dist,
             requires_python,
             provides_extras,
-            classifiers: Some(classifiers),
+            classifiers,
         })
     }
 
@@ -146,9 +146,9 @@ impl ResolutionMetadata {
                 }
             })
             .collect::<Vec<_>>();
-        let classifiers = headers
+        let classifiers = Some(headers
             .get_all_values("Classifiers")
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>());
 
         Ok(Self {
             name,
@@ -156,7 +156,7 @@ impl ResolutionMetadata {
             requires_dist,
             requires_python,
             provides_extras,
-            classifiers: Some(classifiers),
+            classifiers,
         })
     }
 
@@ -241,5 +241,5 @@ mod tests {
         assert_eq!(meta.requires_dist, vec!["foo".parse().unwrap()]);
     }
 
-    // TODO: write test cases for checking classifier information
+    // TODO(RL): write test cases for checking classifier information
 }
