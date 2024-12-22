@@ -10,7 +10,6 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use uv_configuration::DevGroupsManifest;
 use uv_normalize::{ExtraName, GroupName, PackageName};
-use uv_pep440::Version;
 use uv_pypi_types::ResolverMarkerEnvironment;
 
 use crate::lock::{Dependency, PackageId};
@@ -340,7 +339,7 @@ impl<'env> LicenseDisplay<'env> {
         );
         path.push(package_id);
 
-        for (index, dep) in dependencies.iter().enumerate() {
+        for (_index, dep) in dependencies.iter().enumerate() {
             // For sub-visited packages, add the prefix to make the tree display user-friendly.
             // The key observation here is you can group the tree as follows when you're at the
             // root of the tree:
@@ -360,19 +359,10 @@ impl<'env> LicenseDisplay<'env> {
             // those in Group 3 have `└── ` at the top and `    ` at the rest.
             // This observation is true recursively even when looking at the subtree rooted
             // at `level_1_0`.
-            let (prefix_top, prefix_rest) = if dependencies.len() - 1 == index {
-                ("└── ", "    ")
-            } else {
-                ("├── ", "│   ")
-            };
-            for (visited_index, visited_line) in self.visit(*dep, visited, path).iter().enumerate()
+
+            for (_visited_index, visited_line) in self.visit(*dep, visited, path).iter().enumerate()
             {
-                let prefix = if visited_index == 0 {
-                    prefix_top
-                } else {
-                    prefix_rest
-                };
-                lines.push(format!("{prefix}{visited_line}"));
+                lines.push(format!("{visited_line}"));
             }
         }
 

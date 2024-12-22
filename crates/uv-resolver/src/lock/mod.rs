@@ -22,7 +22,10 @@ use uv_distribution_filename::{
     BuildTag, DistExtension, ExtensionError, SourceDistExtension, WheelFilename,
 };
 use uv_distribution_types::{
-    BuiltDist, DependencyMetadata, DirectUrlBuiltDist, DirectUrlSourceDist, DirectorySourceDist, Dist, DistributionMetadata, FileLocation, GitSourceDist, IndexCapabilities, IndexLocations, IndexUrl, Name, PathBuiltDist, PathSourceDist, RegistryBuiltDist, RegistryBuiltWheel, RegistrySourceDist, RemoteSource, ResolvedDist, StaticMetadata, ToUrlError, UrlString
+    BuiltDist, DependencyMetadata, DirectUrlBuiltDist, DirectUrlSourceDist, DirectorySourceDist,
+    Dist, DistributionMetadata, FileLocation, GitSourceDist, IndexLocations,
+    IndexUrl, Name, PathBuiltDist, PathSourceDist, RegistryBuiltDist, RegistryBuiltWheel,
+    RegistrySourceDist, RemoteSource, ResolvedDist, StaticMetadata, ToUrlError, UrlString,
 };
 use uv_fs::{relative_to, PortablePath, PortablePathBuf};
 use uv_git::{GitReference, GitSha, RepositoryReference, ResolvedRepositoryReference};
@@ -39,6 +42,8 @@ use uv_workspace::WorkspaceMember;
 
 use crate::fork_strategy::ForkStrategy;
 pub use crate::lock::installable::Installable;
+pub use crate::lock::license::LicenseDisplay;
+
 pub use crate::lock::map::PackageMap;
 pub use crate::lock::requirements_txt::RequirementsTxtExport;
 pub use crate::lock::tree::TreeDisplay;
@@ -1664,7 +1669,8 @@ impl Package {
             .metadata
             .as_ref()
             .expect("metadata is present")
-            .classifiers.clone();
+            .classifiers
+            .clone();
         Ok(Package {
             id,
             sdist,
@@ -2257,34 +2263,34 @@ impl Package {
         &self.id.name
     }
 
-    pub async fn license<Context: BuildContext>(&self, 
+    pub async fn license<Context: BuildContext>(
+        &self,
         workspace: &Workspace,
         tags: &Tags,
-        database: &DistributionDatabase<'_, Context>) -> String {
-
+        database: &DistributionDatabase<'_, Context>,
+    ) -> String {
         // parse license information from classifiers
         // it is possible that the classifiers field isn't set yet because of the source
         // of the package. the package may be populated from the lock file OR the resolver.
         // in the case of the former, the package data is incomplete and we must fetch
         // the additional data ourselves.
-        if !self.classifiers.is_none() {
-            let x =  self.classifiers.as_ref().unwrap();
-            return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
-        } else {
+        let mut classifiers: Option<Vec<String>> = self.classifiers.clone();
+        if classifiers.is_none() {
             // Get the metadata for the distribution (see above for explanation of tags/capabilities).
             let dist = self.to_dist(
                 workspace.install_path(),
                 TagPolicy::Preferred(tags),
                 &BuildOptions::default(),
             );
-    
+
             if let Ok(generated_dist) = dist {
                 let hasher = HashStrategy::None;
-                let y = database.get_or_build_wheel_metadata(&generated_dist, hasher.get(&generated_dist)).await;
-                
-                if let Ok(meta) = y {
-                    let x = meta.metadata.classifiers.unwrap_or(vec![String::from("no classifiers")]);
-                    return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ");
+
+                if let Ok(meta) = database
+                    .get_or_build_wheel_metadata(&generated_dist, hasher.get(&generated_dist))
+                    .await
+                {
+                    classifiers = meta.metadata.classifiers.clone();
                 } else {
                     todo!("handle the case where package metadata lookup fails")
                 }
@@ -2292,6 +2298,19 @@ impl Package {
                 todo!("handle the case where package.to_dist fails")
             }
         };
+
+        if let Some(classifiers) = classifiers {
+            return classifiers
+                .iter()
+                .filter(|p| p.starts_with("License ::"))
+                .map(|s| s[11..].to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+        }
+
+        // return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ");
+
+        String::from("test")
     }
 
     /// Returns the [`Version`] of the package.
@@ -2436,7 +2455,7 @@ impl PackageWire {
                 .into_iter()
                 .map(|(group, deps)| Ok((group, unwire_deps(deps)?)))
                 .collect::<Result<_, LockError>>()?,
-            classifiers: None // we don't store classifier information in the wire format
+            classifiers: None, // we don't store classifier information in the wire format
         })
     }
 }

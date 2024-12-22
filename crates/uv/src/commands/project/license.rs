@@ -1,21 +1,22 @@
-use std::time::Instant;
 use std::path::Path;
 
 use anyhow::{Error, Result};
-
 
 use futures::StreamExt;
 use uv_cache::{Cache, Refresh};
 use uv_cache_info::Timestamp;
 use uv_client::{Connectivity, FlatIndexClient, RegistryClientBuilder};
 use uv_configuration::{
-    Concurrency, Constraints, DevGroupsSpecification, ExtrasSpecification, LowerBound, PreviewMode, TargetTriple, TrustedHost
+    Concurrency, Constraints, DevGroupsSpecification, LowerBound, PreviewMode,
+    TargetTriple, TrustedHost,
 };
 use uv_dispatch::{BuildDispatch, SharedState};
 use uv_distribution::DistributionDatabase;
 use uv_distribution_types::Index;
 use uv_pep508::PackageName;
-use uv_python::{PythonDownloads, PythonEnvironment, PythonPreference, PythonRequest, PythonVersion};
+use uv_python::{
+    PythonDownloads, PythonEnvironment, PythonPreference, PythonRequest, PythonVersion,
+};
 use uv_resolver::{FlatIndex, LicenseDisplay, PackageMap};
 use uv_settings::PythonInstallMirrors;
 use uv_types::{BuildIsolation, HashStrategy};
@@ -44,7 +45,6 @@ pub(crate) async fn license(
     package: Vec<PackageName>,
     no_dedupe: bool,
     invert: bool,
-    outdated: bool,
     python_version: Option<PythonVersion>,
     python_platform: Option<TargetTriple>,
     python: Option<String>,
@@ -164,7 +164,6 @@ pub(crate) async fn license(
         sources,
     } = settings;
 
-
     // Initialize the registry client.
     let client: uv_client::RegistryClient =
         RegistryClientBuilder::new(cache.clone().with_refresh(Refresh::All(Timestamp::now())))
@@ -183,13 +182,12 @@ pub(crate) async fn license(
         environment = PythonEnvironment::from_interpreter(interpreter.as_ref().unwrap().clone());
         BuildIsolation::SharedPackage(&environment, no_build_isolation_package.as_ref())
     };
-    
+
     let hasher = HashStrategy::Generate;
     // TODO(charlie): These are all default values. We should consider whether we want to make them
     // optional on the downstream APIs.
     let build_constraints = Constraints::default();
     let build_hasher = HashStrategy::default();
-    let extras = ExtrasSpecification::default();
 
     // Resolve the flat indexes from `--find-links`.
     let flat_index = {
@@ -199,7 +197,7 @@ pub(crate) async fn license(
             .await?;
         FlatIndex::from_entries(entries, None, &hasher, &build_options)
     };
-    
+
     // Create a build dispatch.
     let build_dispatch = BuildDispatch::new(
         &client,
@@ -222,20 +220,17 @@ pub(crate) async fn license(
         concurrency,
         preview,
     );
-    
+
     let database = DistributionDatabase::new(&client, &build_dispatch, concurrency.downloads);
 
     let mut licenses = PackageMap::default();
 
     let interpret = interpreter.as_ref().expect("need an interpreter").tags()?;
     let ws = &workspace;
-    let db= &database;
+    let db = &database;
     let mut fetches = futures::stream::iter(lock.packages())
-        .map(|(package)| async move {
-            let license = package.license(&ws.clone(), interpret, &db).await
-            else {
-                return Ok(None)
-            };
+        .map(|package| async move {
+            let license = package.license(&ws.clone(), interpret, &db).await;
             Ok::<Option<_>, Error>(Some((package, license)))
         })
         .buffer_unordered(concurrency.downloads);

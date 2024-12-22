@@ -13,7 +13,11 @@ use uv_cli::{
     ToolUpgradeArgs,
 };
 use uv_cli::{
-    AddArgs, ColorChoice, ExternalCommand, GlobalArgs, InitArgs, LicenseArgs, ListFormat, LockArgs, Maybe, PipCheckArgs, PipCompileArgs, PipFreezeArgs, PipInstallArgs, PipListArgs, PipShowArgs, PipSyncArgs, PipTreeArgs, PipUninstallArgs, PythonFindArgs, PythonInstallArgs, PythonListArgs, PythonPinArgs, PythonUninstallArgs, RemoveArgs, RunArgs, SyncArgs, ToolDirArgs, ToolInstallArgs, ToolListArgs, ToolRunArgs, ToolUninstallArgs, TreeArgs, VenvArgs
+    AddArgs, ColorChoice, ExternalCommand, GlobalArgs, InitArgs, LicenseArgs, ListFormat, LockArgs,
+    Maybe, PipCheckArgs, PipCompileArgs, PipFreezeArgs, PipInstallArgs, PipListArgs, PipShowArgs,
+    PipSyncArgs, PipTreeArgs, PipUninstallArgs, PythonFindArgs, PythonInstallArgs, PythonListArgs,
+    PythonPinArgs, PythonUninstallArgs, RemoveArgs, RunArgs, SyncArgs, ToolDirArgs,
+    ToolInstallArgs, ToolListArgs, ToolRunArgs, ToolUninstallArgs, TreeArgs, VenvArgs,
 };
 use uv_client::Connectivity;
 use uv_configuration::{
@@ -1348,7 +1352,6 @@ pub(crate) struct LicenseSettings {
     pub(crate) package: Vec<PackageName>,
     pub(crate) no_dedupe: bool,
     pub(crate) invert: bool,
-    pub(crate) outdated: bool,
     pub(crate) python_version: Option<PythonVersion>,
     pub(crate) python_platform: Option<TargetTriple>,
     pub(crate) python: Option<String>,
@@ -1381,7 +1384,6 @@ impl LicenseSettings {
             .clone()
             .map(|fs| fs.install_mirrors.clone())
             .unwrap_or_default();
-
         Self {
             dev: DevGroupsSpecification::from_args(
                 dev, no_dev, only_dev, group, no_group, only_group, all_groups,
@@ -1394,7 +1396,6 @@ impl LicenseSettings {
             package: tree.package,
             no_dedupe: tree.no_dedupe,
             invert: tree.invert,
-            outdated: tree.outdated,
             python_version,
             python_platform,
             python: python.and_then(Maybe::into_option),
