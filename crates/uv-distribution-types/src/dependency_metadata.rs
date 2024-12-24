@@ -45,7 +45,7 @@ impl DependencyMetadata {
                 return None;
             };
             debug!("Found dependency metadata entry for `{package}=={version}`",);
-            let classifiers = vec!["test!".to_string()];
+            let classifiers = vec!["test!".to_string()]; // TODO(RL): come back
 
             Some(ResolutionMetadata {
                 name: metadata.name.clone(),
@@ -53,7 +53,7 @@ impl DependencyMetadata {
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
-                classifiers: Some(classifiers), // TODO(RL): come back
+                classifiers: Some(classifiers),
             })
         } else {
             // If no version was requested (i.e., it's a direct URL dependency), allow a single
@@ -67,14 +67,14 @@ impl DependencyMetadata {
                 return None;
             };
             debug!("Found dependency metadata entry for `{package}` (assuming: `{version}`)");
-            let classifiers = vec!["test else!".to_string()];
+            let classifiers = vec!["test else!".to_string()]; // TODO(RL): come back
             Some(ResolutionMetadata {
                 name: metadata.name.clone(),
                 version,
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
-                classifiers: Some(classifiers), // TODO(RL): come back
+                classifiers: Some(classifiers),
             })
         }
     }
