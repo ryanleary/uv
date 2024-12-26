@@ -3469,7 +3469,7 @@ pub struct TreeArgs {
 #[derive(Args)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct LicenseArgs {
-    /// Show a platform-independent dependency tree.
+    /// Show full list of platform-independent dependency licenses.
     ///
     /// Shows resolved package versions for all Python versions and platforms,
     /// rather than filtering to those that are relevant for the current
@@ -3479,8 +3479,9 @@ pub struct LicenseArgs {
     #[arg(long)]
     pub universal: bool,
 
-    #[command(flatten)]
-    pub tree: DisplayTreeArgs,
+    /// Maximum display depth of the dependency tree
+    #[arg(long, short, default_value_t = 255)]
+    pub depth: u8,
 
     /// Include the development dependency group.
     ///
@@ -3502,7 +3503,7 @@ pub struct LicenseArgs {
     /// Omit the development dependency group.
     ///
     /// This option is an alias for `--no-group dev`.
-    #[arg(long, overrides_with("dev"), conflicts_with = "invert")]
+    #[arg(long, overrides_with("dev"))]
     pub no_dev: bool,
 
     /// Include dependencies from the specified dependency group.

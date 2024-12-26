@@ -36,12 +36,11 @@ impl<'env> LicenseDisplay<'env> {
         markers: Option<&'env ResolverMarkerEnvironment>,
         license: &'env PackageMap<String>,
         depth: usize,
-        prune: &[PackageName],
-        packages: &[PackageName],
-        dev: &DevGroupsManifest,
-        no_dedupe: bool,
-        invert: bool,
+        // packages: &[PackageName],
+        dev: &DevGroupsManifest
     ) -> Self {
+        let invert = false;
+        let no_dedupe = false;
         // Identify the workspace members.
         let members: FxHashSet<&PackageId> = if lock.members().is_empty() {
             lock.root().into_iter().map(|package| &package.id).collect()
@@ -64,9 +63,9 @@ impl<'env> LicenseDisplay<'env> {
         // Create the complete graph.
         let mut inverse = FxHashMap::default();
         for package in &lock.packages {
-            if prune.contains(&package.id.name) {
-                continue;
-            }
+            // if prune.contains(&package.id.name) {
+            //     continue;
+            // }
 
             // Insert the package into the graph.
             let package_node = if let Some(index) = inverse.get(&package.id) {
@@ -186,24 +185,24 @@ impl<'env> LicenseDisplay<'env> {
             graph.reverse();
         }
 
-        // Filter the graph to those nodes reachable from the target packages.
-        if !packages.is_empty() {
-            let mut reachable = graph
-                .node_indices()
-                .filter(|index| packages.contains(&graph[*index].name))
-                .collect::<FxHashSet<_>>();
-            let mut stack = reachable.iter().copied().collect::<VecDeque<_>>();
-            while let Some(node) = stack.pop_front() {
-                for edge in graph.edges_directed(node, Direction::Outgoing) {
-                    if reachable.insert(edge.target()) {
-                        stack.push_back(edge.target());
-                    }
-                }
-            }
+        // // Filter the graph to those nodes reachable from the target packages.
+        // if !packages.is_empty() {
+        //     let mut reachable = graph
+        //         .node_indices()
+        //         .filter(|index| packages.contains(&graph[*index].name))
+        //         .collect::<FxHashSet<_>>();
+        //     let mut stack = reachable.iter().copied().collect::<VecDeque<_>>();
+        //     while let Some(node) = stack.pop_front() {
+        //         for edge in graph.edges_directed(node, Direction::Outgoing) {
+        //             if reachable.insert(edge.target()) {
+        //                 stack.push_back(edge.target());
+        //             }
+        //         }
+        //     }
 
-            // Remove the unreachable nodes from the graph.
-            graph.retain_nodes(|_, index| reachable.contains(&index));
-        }
+        //     // Remove the unreachable nodes from the graph.
+        //     graph.retain_nodes(|_, index| reachable.contains(&index));
+        // }
 
         // Compute the list of roots.
         let roots = {

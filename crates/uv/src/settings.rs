@@ -1348,10 +1348,6 @@ pub(crate) struct LicenseSettings {
     pub(crate) frozen: bool,
     pub(crate) universal: bool,
     pub(crate) depth: u8,
-    pub(crate) prune: Vec<PackageName>,
-    pub(crate) package: Vec<PackageName>,
-    pub(crate) no_dedupe: bool,
-    pub(crate) invert: bool,
     pub(crate) python_version: Option<PythonVersion>,
     pub(crate) python_platform: Option<TargetTriple>,
     pub(crate) python: Option<String>,
@@ -1363,8 +1359,8 @@ impl LicenseSettings {
     /// Resolve the [`LicenseSettings`] from the CLI and workspace configuration.
     pub(crate) fn resolve(args: LicenseArgs, filesystem: Option<FilesystemOptions>) -> Self {
         let LicenseArgs {
-            tree,
             universal,
+            depth,
             dev,
             only_dev,
             no_dev,
@@ -1391,11 +1387,7 @@ impl LicenseSettings {
             locked,
             frozen,
             universal,
-            depth: tree.depth,
-            prune: tree.prune,
-            package: tree.package,
-            no_dedupe: tree.no_dedupe,
-            invert: tree.invert,
+            depth,
             python_version,
             python_platform,
             python: python.and_then(Maybe::into_option),

@@ -41,10 +41,6 @@ pub(crate) async fn license(
     frozen: bool,
     universal: bool,
     depth: u8,
-    prune: Vec<PackageName>,
-    package: Vec<PackageName>,
-    no_dedupe: bool,
-    invert: bool,
     python_version: Option<PythonVersion>,
     python_platform: Option<TargetTriple>,
     python: Option<String>,
@@ -87,7 +83,7 @@ pub(crate) async fn license(
                 connectivity,
                 native_tls,
                 allow_insecure_host,
-                install_mirrors,
+                &install_mirrors,
                 no_config,
                 cache,
                 printer,
@@ -113,7 +109,7 @@ pub(crate) async fn license(
     // Update the lockfile, if necessary.
     let lock = match do_safe_lock(
         mode,
-        &workspace,
+        (&workspace).into(),
         settings.as_ref(),
         bounds,
         &state,
@@ -241,17 +237,13 @@ pub(crate) async fn license(
         licenses.insert(package.clone(), license);
     }
 
-    // Render the tree.
+    // Render the license information.
     let tree = LicenseDisplay::new(
         &lock,
         markers.as_ref(),
         &licenses,
         depth.into(),
-        &prune,
-        &package,
-        &dev.with_defaults(defaults),
-        no_dedupe,
-        invert,
+        &dev.with_defaults(defaults)
     );
 
     print!("{tree}");

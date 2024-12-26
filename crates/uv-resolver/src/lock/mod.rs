@@ -38,7 +38,7 @@ use uv_pypi_types::{
     Requirement, RequirementSource,
 };
 use uv_types::{BuildContext, HashStrategy};
-use uv_workspace::WorkspaceMember;
+use uv_workspace::{Workspace, WorkspaceMember};
 
 use crate::fork_strategy::ForkStrategy;
 pub use crate::lock::installable::Installable;
