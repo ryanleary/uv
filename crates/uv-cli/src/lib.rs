@@ -3479,10 +3479,6 @@ pub struct LicenseArgs {
     #[arg(long)]
     pub universal: bool,
 
-    /// Maximum display depth of the dependency tree
-    #[arg(long, short, default_value_t = 255)]
-    pub depth: u8,
-
     /// Include the development dependency group.
     ///
     /// Development dependencies are defined via `dependency-groups.dev` or
@@ -3531,6 +3527,10 @@ pub struct LicenseArgs {
     /// `--no-group` can be used to exclude specific groups.
     #[arg(long, conflicts_with_all = [ "group", "only_group" ])]
     pub all_groups: bool,
+
+    /// Display only direct dependencies (default false)
+    #[arg(long)]
+    pub direct_deps_only: bool,
 
     /// Assert that the `uv.lock` will remain unchanged.
     ///

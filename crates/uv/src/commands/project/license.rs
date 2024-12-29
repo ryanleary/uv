@@ -7,13 +7,12 @@ use uv_cache::{Cache, Refresh};
 use uv_cache_info::Timestamp;
 use uv_client::{Connectivity, FlatIndexClient, RegistryClientBuilder};
 use uv_configuration::{
-    Concurrency, Constraints, DevGroupsSpecification, LowerBound, PreviewMode,
-    TargetTriple, TrustedHost,
+    Concurrency, Constraints, DevGroupsSpecification, LowerBound, PreviewMode, TargetTriple,
+    TrustedHost,
 };
 use uv_dispatch::{BuildDispatch, SharedState};
 use uv_distribution::DistributionDatabase;
 use uv_distribution_types::Index;
-use uv_pep508::PackageName;
 use uv_python::{
     PythonDownloads, PythonEnvironment, PythonPreference, PythonRequest, PythonVersion,
 };
@@ -40,7 +39,7 @@ pub(crate) async fn license(
     locked: bool,
     frozen: bool,
     universal: bool,
-    depth: u8,
+    direct_only: bool,
     python_version: Option<PythonVersion>,
     python_platform: Option<TargetTriple>,
     python: Option<String>,
@@ -179,10 +178,8 @@ pub(crate) async fn license(
         BuildIsolation::SharedPackage(&environment, no_build_isolation_package.as_ref())
     };
 
-    let hasher = HashStrategy::Generate;
     // TODO(charlie): These are all default values. We should consider whether we want to make them
     // optional on the downstream APIs.
-    let build_constraints = Constraints::default();
     let build_hasher = HashStrategy::default();
 
     // Resolve the flat indexes from `--find-links`.
@@ -191,14 +188,14 @@ pub(crate) async fn license(
         let entries = client
             .fetch(index_locations.flat_indexes().map(Index::url))
             .await?;
-        FlatIndex::from_entries(entries, None, &hasher, &build_options)
+        FlatIndex::from_entries(entries, None, &build_hasher, &build_options)
     };
 
     // Create a build dispatch.
     let build_dispatch = BuildDispatch::new(
         &client,
         cache,
-        build_constraints,
+        Constraints::default(),
         interpreter.as_ref().unwrap(),
         &index_locations,
         &flat_index,
@@ -234,22 +231,22 @@ pub(crate) async fn license(
         let Some((package, license)) = entry else {
             continue;
         };
-        licenses.insert(package.clone(), license);
+        match license {
+            Some(license) => licenses.insert(package.clone(), license),
+            None => continue,
+        };
     }
 
     // Render the license information.
-    let tree = LicenseDisplay::new(
+    let display = LicenseDisplay::new(
         &lock,
         markers.as_ref(),
         &licenses,
-        depth.into(),
-        &dev.with_defaults(defaults)
+        direct_only,
+        &dev.with_defaults(defaults),
     );
 
-    print!("{tree}");
-
-    // let x = dev.with_defaults(defaults);
-    // println!("{:?}", x);
+    print!("{display}");
 
     Ok(ExitStatus::Success)
 }

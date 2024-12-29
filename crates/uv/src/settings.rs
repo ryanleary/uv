@@ -1347,7 +1347,7 @@ pub(crate) struct LicenseSettings {
     pub(crate) locked: bool,
     pub(crate) frozen: bool,
     pub(crate) universal: bool,
-    pub(crate) depth: u8,
+    pub(crate) direct_only: bool,
     pub(crate) python_version: Option<PythonVersion>,
     pub(crate) python_platform: Option<TargetTriple>,
     pub(crate) python: Option<String>,
@@ -1360,7 +1360,6 @@ impl LicenseSettings {
     pub(crate) fn resolve(args: LicenseArgs, filesystem: Option<FilesystemOptions>) -> Self {
         let LicenseArgs {
             universal,
-            depth,
             dev,
             only_dev,
             no_dev,
@@ -1368,6 +1367,7 @@ impl LicenseSettings {
             no_group,
             only_group,
             all_groups,
+            direct_deps_only,
             locked,
             frozen,
             build,
@@ -1387,7 +1387,7 @@ impl LicenseSettings {
             locked,
             frozen,
             universal,
-            depth,
+            direct_only: direct_deps_only,
             python_version,
             python_platform,
             python: python.and_then(Maybe::into_option),

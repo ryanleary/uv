@@ -1643,7 +1643,7 @@ async fn run_project(
                 args.locked,
                 args.frozen,
                 args.universal,
-                args.depth,
+                args.direct_only,
                 args.python_version,
                 args.python_platform,
                 args.python,

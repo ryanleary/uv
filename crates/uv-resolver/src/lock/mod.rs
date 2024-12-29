@@ -13,6 +13,7 @@ use petgraph::visit::EdgeRef;
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::Serializer;
 use toml_edit::{value, Array, ArrayOfTables, InlineTable, Item, Table, Value};
+use tracing::debug;
 use url::Url;
 
 use uv_cache_key::RepositoryUrl;
@@ -2263,12 +2264,21 @@ impl Package {
         &self.id.name
     }
 
+    fn get_license_string(&self, classifiers: &Vec::<String>) -> Option<String> {
+        Some(classifiers
+            .iter()
+            .filter(|p| p.starts_with("License ::"))
+            .map(|s| s[11..].to_string())
+            .collect::<Vec<_>>()
+            .join(", "))
+    }
+
     pub async fn license<Context: BuildContext>(
         &self,
         workspace: &Workspace,
         tags: &Tags,
         database: &DistributionDatabase<'_, Context>,
-    ) -> String {
+    ) -> Option<String> {
         // parse license information from classifiers
         // it is possible that the classifiers field isn't set yet because of the source
         // of the package. the package may be populated from the lock file OR the resolver.
@@ -2292,25 +2302,21 @@ impl Package {
                 {
                     classifiers = meta.metadata.classifiers.clone();
                 } else {
-                    todo!("handle the case where package metadata lookup fails")
+                    debug!("package metadata lookup failed");
+                    return None
                 }
             } else {
-                todo!("handle the case where package.to_dist fails")
+                debug!("package.to_dist failed");
+                return None
             }
         };
 
         if let Some(classifiers) = classifiers {
-            return classifiers
-                .iter()
-                .filter(|p| p.starts_with("License ::"))
-                .map(|s| s[11..].to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
+            let license_string = self.get_license_string(&classifiers);
+            license_string
+        } else {
+            None
         }
-
-        // return x.iter().filter(|p| p.starts_with("License ::")).map(|s| s.to_string()).collect::<Vec<_>>().join(", ");
-
-        String::from("test")
     }
 
     /// Returns the [`Version`] of the package.

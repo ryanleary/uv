@@ -9,7 +9,7 @@ use petgraph::Direction;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use uv_configuration::DevGroupsManifest;
-use uv_normalize::{ExtraName, GroupName, PackageName};
+use uv_normalize::{ExtraName, GroupName};
 use uv_pypi_types::ResolverMarkerEnvironment;
 
 use crate::lock::{Dependency, PackageId};
@@ -21,7 +21,7 @@ pub struct LicenseDisplay<'env> {
     graph: petgraph::graph::Graph<&'env PackageId, Edge<'env>, petgraph::Directed>,
     /// The packages considered as roots of the dependency tree.
     roots: Vec<NodeIndex>,
-    /// The latest known version of each package.
+    /// The discovered license data for each dependency
     license: &'env PackageMap<String>,
     /// Maximum display depth of the dependency tree.
     depth: usize,
@@ -35,12 +35,12 @@ impl<'env> LicenseDisplay<'env> {
         lock: &'env Lock,
         markers: Option<&'env ResolverMarkerEnvironment>,
         license: &'env PackageMap<String>,
-        depth: usize,
+        direct_only: bool,
         // packages: &[PackageName],
-        dev: &DevGroupsManifest
+        dev: &DevGroupsManifest,
     ) -> Self {
-        let invert = false;
         let no_dedupe = false;
+        let depth = if direct_only { 1 } else { 255 };
         // Identify the workspace members.
         let members: FxHashSet<&PackageId> = if lock.members().is_empty() {
             lock.root().into_iter().map(|package| &package.id).collect()
@@ -180,10 +180,6 @@ impl<'env> LicenseDisplay<'env> {
             graph.retain_nodes(|_, index| reachable.contains(&index));
         }
 
-        // Reverse the graph.
-        if invert {
-            graph.reverse();
-        }
 
         // // Filter the graph to those nodes reachable from the target packages.
         // if !packages.is_empty() {
@@ -258,6 +254,7 @@ impl<'env> LicenseDisplay<'env> {
         visited: &mut FxHashMap<&'env PackageId, Vec<&'env PackageId>>,
         path: &mut Vec<&'env PackageId>,
     ) -> Vec<String> {
+        let unknown_license = String::from("Unknown License");
         // Short-circuit if the current path is longer than the provided depth.
         if path.len() > self.depth {
             return Vec::new();
@@ -266,8 +263,16 @@ impl<'env> LicenseDisplay<'env> {
         let package_id = self.graph[cursor.node()];
         let edge = cursor.edge().map(|edge_id| &self.graph[edge_id]);
 
+        if visited.contains_key(&package_id) {
+            return vec![];
+        }
+
         let line = {
-            let mut line = format!("{}: {},", format!("{}", package_id.name).bold().green(), package_id.version);
+            let mut line = format!(
+                "{}: {},",
+                format!("{}", package_id.name).bold().green(),
+                package_id.version
+            );
 
             if let Some(edge) = edge {
                 let extras = &edge.dependency().extra;
@@ -279,7 +284,7 @@ impl<'env> LicenseDisplay<'env> {
             }
 
             line.push(' ');
-            line.push_str(&format!("{}", self.license.get(package_id).expect("Invalid state")));
+            line.push_str(self.license.get(package_id).unwrap_or_else(|| &unknown_license));
 
             if let Some(edge) = edge {
                 match edge {
@@ -446,21 +451,9 @@ impl Cursor {
 
 impl std::fmt::Display for LicenseDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use owo_colors::OwoColorize;
 
-        let mut deduped = false;
         for line in self.render() {
-            deduped |= line.contains('*');
             writeln!(f, "{line}")?;
-        }
-
-        if deduped {
-            let message = if self.no_dedupe {
-                "(*) Package tree is a cycle and cannot be shown".italic()
-            } else {
-                "(*) Package tree already displayed".italic()
-            };
-            writeln!(f, "{message}")?;
         }
 
         Ok(())
