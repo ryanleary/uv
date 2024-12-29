@@ -25,8 +25,6 @@ pub struct LicenseDisplay<'env> {
     license: &'env PackageMap<String>,
     /// Maximum display depth of the dependency tree.
     depth: usize,
-    /// Whether to de-duplicate the displayed dependencies.
-    no_dedupe: bool,
 }
 
 impl<'env> LicenseDisplay<'env> {
@@ -39,7 +37,6 @@ impl<'env> LicenseDisplay<'env> {
         // packages: &[PackageName],
         dev: &DevGroupsManifest,
     ) -> Self {
-        let no_dedupe = false;
         let depth = if direct_only { 1 } else { 255 };
         // Identify the workspace members.
         let members: FxHashSet<&PackageId> = if lock.members().is_empty() {
@@ -243,7 +240,6 @@ impl<'env> LicenseDisplay<'env> {
             roots,
             license,
             depth,
-            no_dedupe,
         }
     }
 
@@ -305,12 +301,8 @@ impl<'env> LicenseDisplay<'env> {
         // 1. The package is in the current traversal path (i.e., a dependency cycle).
         // 2. The package has been visited and de-duplication is enabled (default).
         if let Some(requirements) = visited.get(package_id) {
-            if !self.no_dedupe || path.contains(&package_id) {
-                return if requirements.is_empty() {
-                    vec![line]
-                } else {
-                    vec![format!("{line} (*)")]
-                };
+            if requirements.is_empty() {
+                return vec![line]
             }
         }
 
@@ -344,26 +336,6 @@ impl<'env> LicenseDisplay<'env> {
         path.push(package_id);
 
         for (_index, dep) in dependencies.iter().enumerate() {
-            // For sub-visited packages, add the prefix to make the tree display user-friendly.
-            // The key observation here is you can group the tree as follows when you're at the
-            // root of the tree:
-            // root_package
-            // ├── level_1_0          // Group 1
-            // │   ├── level_2_0      ...
-            // │   │   ├── level_3_0  ...
-            // │   │   └── level_3_1  ...
-            // │   └── level_2_1      ...
-            // ├── level_1_1          // Group 2
-            // │   ├── level_2_2      ...
-            // │   └── level_2_3      ...
-            // └── level_1_2          // Group 3
-            //     └── level_2_4      ...
-            //
-            // The lines in Group 1 and 2 have `├── ` at the top and `|   ` at the rest while
-            // those in Group 3 have `└── ` at the top and `    ` at the rest.
-            // This observation is true recursively even when looking at the subtree rooted
-            // at `level_1_0`.
-
             for (_visited_index, visited_line) in self.visit(*dep, visited, path).iter().enumerate()
             {
                 lines.push(format!("{visited_line}"));

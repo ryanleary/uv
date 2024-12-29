@@ -1619,7 +1619,9 @@ pub struct Package {
     dependency_groups: BTreeMap<GroupName, Vec<Dependency>>,
     /// The exact requirements from the package metadata.
     metadata: PackageMetadata,
-    /// The cached set of classifiers that describe the package
+    /// The cached set of classifiers that describe the package. It will be None
+    /// in the case where the classifiers have not yet (attempted to have) been
+    /// loaded.
     classifiers: Option<Vec<String>>,
 }
 
