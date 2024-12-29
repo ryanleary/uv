@@ -2265,12 +2265,25 @@ impl Package {
     }
 
     fn get_license_string(&self, classifiers: &Vec::<String>) -> Option<String> {
-        Some(classifiers
+        let license_prefix = "License ::";
+        let license_osi_prefix = "License :: OSI Approved ::";
+        let classifier_license = Some(classifiers
             .iter()
-            .filter(|p| p.starts_with("License ::"))
-            .map(|s| s[11..].to_string())
+            .filter_map(|c| {
+                if !c.starts_with(license_prefix) {
+                    None // filter this classifier out if it's not License-related
+                } else {
+                    if c.starts_with(license_osi_prefix) {
+                        Some(c[license_osi_prefix.len()+1..].to_string()) // remove the License & OSI-approved prefixes
+                    } else{
+                        Some(c[license_prefix.len()+1..].to_string()) // remove the License prefix
+                    }
+                }
+            })
             .collect::<Vec<_>>()
             .join(", "))
+            .filter(|s| !s.is_empty());
+        classifier_license
     }
 
     pub async fn license<Context: BuildContext>(
