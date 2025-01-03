@@ -1637,7 +1637,7 @@ async fn run_project(
             // Initialize the cache.
             let cache = cache.init()?;
 
-            commands::license(
+            Box::pin(commands::license(
                 project_dir,
                 args.dev,
                 args.locked,
@@ -1659,7 +1659,7 @@ async fn run_project(
                 &cache,
                 printer,
                 globals.preview,
-            )
+            ))
             .await
         }
 
