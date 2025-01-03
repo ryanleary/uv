@@ -5615,7 +5615,7 @@ dependencies = [
  "itertools 0.13.0",
  "pathdiff",
  "self-replace",
- "thiserror 2.0.9",
+ "thiserror 2.0.7",
  "tracing",
  "uv-fs",
  "uv-platform-tags",

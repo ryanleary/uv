@@ -60,10 +60,6 @@ impl<'env> LicenseDisplay<'env> {
         // Create the complete graph.
         let mut inverse = FxHashMap::default();
         for package in &lock.packages {
-            // if prune.contains(&package.id.name) {
-            //     continue;
-            // }
-
             // Insert the package into the graph.
             let package_node = if let Some(index) = inverse.get(&package.id) {
                 *index
