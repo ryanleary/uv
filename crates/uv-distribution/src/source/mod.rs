@@ -2458,6 +2458,8 @@ async fn read_egg_info(
         requires_dist: requires_txt.requires_dist,
         provides_extras: requires_txt.provides_extras,
         classifiers: Some(metadata23.classifiers),
+        // TODO(RL): collapse metadata23.license / metadata23.license_expression [pep639] / metadata23.license_files
+        license: metadata23.license,
     })
 }
 

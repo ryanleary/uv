@@ -98,13 +98,15 @@ pub(crate) fn parse_pyproject_toml(
         .into_iter()
         .collect::<Vec<_>>());
 
+
     Ok(ResolutionMetadata {
         name,
         version,
         requires_dist,
         requires_python,
         provides_extras,
-        classifiers
+        classifiers,
+        license: None
     })
 }
 

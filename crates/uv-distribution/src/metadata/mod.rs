@@ -50,6 +50,7 @@ pub struct Metadata {
     pub requires_python: Option<VersionSpecifiers>,
     pub provides_extras: Vec<ExtraName>,
     pub dependency_groups: BTreeMap<GroupName, Vec<uv_pypi_types::Requirement>>,
+    pub license: Option<String>,
     pub classifiers: Option<Vec<String>>,
 }
 
@@ -68,6 +69,7 @@ impl Metadata {
             requires_python: metadata.requires_python,
             provides_extras: metadata.provides_extras,
             dependency_groups: BTreeMap::default(),
+            license: metadata.license,
             classifiers: metadata.classifiers,
         }
     }
@@ -111,6 +113,7 @@ impl Metadata {
             requires_python: metadata.requires_python,
             provides_extras,
             dependency_groups,
+            license: metadata.license,
             classifiers: metadata.classifiers
         })
     }

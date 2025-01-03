@@ -1619,6 +1619,8 @@ pub struct Package {
     dependency_groups: BTreeMap<GroupName, Vec<Dependency>>,
     /// The exact requirements from the package metadata.
     metadata: PackageMetadata,
+
+    license: Option<String>,
     /// The cached set of classifiers that describe the package. It will be None
     /// in the case where the classifiers have not yet (attempted to have) been
     /// loaded.
@@ -1668,6 +1670,13 @@ impl Package {
                 })
                 .collect::<Result<_, _>>()?
         };
+        let license = annotated_dist
+            .metadata
+            .as_ref()
+            .expect("metadata is present")
+            .license
+            .clone();
+            
         let classifiers = annotated_dist
             .metadata
             .as_ref()
@@ -1686,6 +1695,7 @@ impl Package {
                 requires_dist,
                 dependency_groups,
             },
+            license,
             classifiers,
         })
     }
@@ -2266,7 +2276,12 @@ impl Package {
         &self.id.name
     }
 
-    fn get_license_string(&self, classifiers: &Vec::<String>) -> Option<String> {
+    fn get_license_string(&self, license_meta: &Option<String>, classifiers: &Vec::<String>) -> Option<String> {
+        if let Some(license_txt) = license_meta {
+            if !license_txt.is_empty() {
+                return license_meta.clone()
+            }
+        }
         let license_prefix = "License ::";
         let license_osi_prefix = "License :: OSI Approved ::";
         let classifier_license = Some(classifiers
@@ -2300,7 +2315,8 @@ impl Package {
         // in the case of the former, the package data is incomplete and we must fetch
         // the additional data ourselves.
         let mut classifiers: Option<Vec<String>> = self.classifiers.clone();
-        if classifiers.is_none() {
+        let mut license_meta: Option<String> = self.license.clone();
+        if classifiers.is_none() || license_meta.is_none() { // TODO(RL): need a smarter check here
             // Get the metadata for the distribution (see above for explanation of tags/capabilities).
             let dist = self.to_dist(
                 workspace.install_path(),
@@ -2316,6 +2332,8 @@ impl Package {
                     .await
                 {
                     classifiers = meta.metadata.classifiers.clone();
+                    license_meta = meta.metadata.license.clone();
+                    println!("{} :: {:?}", self.name(), license_meta);
                 } else {
                     debug!("package metadata lookup failed");
                     return None
@@ -2327,7 +2345,7 @@ impl Package {
         };
 
         if let Some(classifiers) = classifiers {
-            let license_string = self.get_license_string(&classifiers);
+            let license_string = self.get_license_string(&license_meta, &classifiers);
             license_string
         } else {
             None
@@ -2476,6 +2494,7 @@ impl PackageWire {
                 .into_iter()
                 .map(|(group, deps)| Ok((group, unwire_deps(deps)?)))
                 .collect::<Result<_, LockError>>()?,
+            license: None, // we don't store license information in the wire format
             classifiers: None, // we don't store classifier information in the wire format
         })
     }
