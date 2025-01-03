@@ -45,12 +45,15 @@ impl DependencyMetadata {
                 return None;
             };
             debug!("Found dependency metadata entry for `{package}=={version}`",);
+
             Some(ResolutionMetadata {
                 name: metadata.name.clone(),
                 version: version.clone(),
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
+                classifiers: None, // TODO(RL): come back for this
+                license: None // TODO(RL): come back
             })
         } else {
             // If no version was requested (i.e., it's a direct URL dependency), allow a single
@@ -70,6 +73,8 @@ impl DependencyMetadata {
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
+                classifiers: None, // TODO(RL): come back
+                license: None, // TODO(RL): come back
             })
         }
     }
