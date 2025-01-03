@@ -72,11 +72,8 @@ impl ResolutionMetadata {
                 }
             })
             .collect::<Vec<_>>();
-        let classifiers = Some(headers
-            .get_all_values("Classifier")
-            .collect::<Vec<_>>());
-        let license = headers
-            .get_first_value("License");
+        let classifiers = Some(headers.get_all_values("Classifier").collect::<Vec<_>>());
+        let license = headers.get_first_value("License");
 
         Ok(Self {
             name,
@@ -152,11 +149,8 @@ impl ResolutionMetadata {
                 }
             })
             .collect::<Vec<_>>();
-        let classifiers = Some(headers
-            .get_all_values("Classifiers")
-            .collect::<Vec<_>>());
-        let license = headers
-            .get_first_value("License");
+        let classifiers = Some(headers.get_all_values("Classifiers").collect::<Vec<_>>());
+        let license = headers.get_first_value("License");
 
         Ok(Self {
             name,
