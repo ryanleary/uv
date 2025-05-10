@@ -30,6 +30,7 @@ mod implementation;
 mod installation;
 mod interpreter;
 mod libc;
+pub mod macos_dylib;
 pub mod managed;
 #[cfg(windows)]
 mod microsoft_store;
@@ -110,7 +111,7 @@ mod tests {
 
     use crate::{
         discovery::{
-            find_best_python_installation, find_python_installation, EnvironmentPreference,
+            self, find_best_python_installation, find_python_installation, EnvironmentPreference,
         },
         PythonPreference,
     };
@@ -282,10 +283,10 @@ mod tests {
             fs_err::create_dir_all(path.parent().unwrap())?;
             fs_err::write(
                 path,
-                formatdoc! {r##"
+                formatdoc! {r"
                 #!/bin/bash
                 echo '{json}'
-                "##},
+                "},
             )?;
 
             fs_err::set_permissions(path, std::os::unix::fs::PermissionsExt::from_mode(0o770))?;
@@ -304,10 +305,10 @@ mod tests {
 
             fs_err::write(
                 path,
-                formatdoc! {r##"
+                formatdoc! {r"
                 #!/bin/bash
                 echo '{output}' 1>&2
-                "##},
+                "},
             )?;
 
             fs_err::set_permissions(path, std::os::unix::fs::PermissionsExt::from_mode(0o770))?;
@@ -525,10 +526,10 @@ mod tests {
         #[cfg(unix)]
         fs_err::write(
             children[0].join(format!("python{}", env::consts::EXE_SUFFIX)),
-            formatdoc! {r##"
+            formatdoc! {r"
         #!/bin/bash
         echo 'foo'
-        "##},
+        "},
         )?;
         fs_err::set_permissions(
             children[0].join(format!("python{}", env::consts::EXE_SUFFIX)),
@@ -588,11 +589,10 @@ mod tests {
                 PythonPreference::default(),
                 &context.cache,
             )
-        })?;
+        });
         assert!(
-            matches!(result, Err(PythonNotFound { .. })),
-            // TODO(zanieb): We could improve the error handling to hint this to the user
-            "If only Python 2 is available, we should not find a python; got {result:?}"
+            matches!(result, Err(discovery::Error::Query(..))),
+            "If only Python 2 is available, we should report the interpreter query error; got {result:?}"
         );
 
         Ok(())

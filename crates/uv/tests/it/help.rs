@@ -5,7 +5,7 @@ fn help() {
     let context = TestContext::new_with_versions(&[]);
 
     // The `uv help` command should show the long help message
-    uv_snapshot!(context.filters(), context.help(), @r###"
+    uv_snapshot!(context.filters(), context.help(), @r#"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -22,6 +22,7 @@ fn help() {
       lock                       Update the project's lockfile
       export                     Export the project's lockfile to an alternate format
       tree                       Display the project's dependency tree
+      license                    Display the project's license information
       tool                       Run and install commands provided by Python packages
       python                     Manage Python versions and installations
       pip                        Manage Python packages with a pip-compatible interface
@@ -52,7 +53,7 @@ fn help() {
       -v, --verbose...
               Use verbose output
           --color <COLOR_CHOICE>
-              Control colors in output [default: auto] [possible values: auto, always, never]
+              Control the use of color in output [possible values: auto, always, never]
           --native-tls
               Whether to load TLS certificates from the platform's native certificate store [env:
               UV_NATIVE_TLS=]
@@ -79,14 +80,14 @@ fn help() {
 
 
     ----- stderr -----
-    "###);
+    "#);
 }
 
 #[test]
 fn help_flag() {
     let context = TestContext::new_with_versions(&[]);
 
-    uv_snapshot!(context.filters(), context.command().arg("--help"), @r###"
+    uv_snapshot!(context.filters(), context.command().arg("--help"), @r#"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -103,6 +104,7 @@ fn help_flag() {
       lock     Update the project's lockfile
       export   Export the project's lockfile to an alternate format
       tree     Display the project's dependency tree
+      license  Display the project's license information
       tool     Run and install commands provided by Python packages
       python   Manage Python versions and installations
       pip      Manage Python packages with a pip-compatible interface
@@ -132,7 +134,7 @@ fn help_flag() {
       -v, --verbose...
               Use verbose output
           --color <COLOR_CHOICE>
-              Control colors in output [default: auto] [possible values: auto, always, never]
+              Control the use of color in output [possible values: auto, always, never]
           --native-tls
               Whether to load TLS certificates from the platform's native certificate store [env:
               UV_NATIVE_TLS=]
@@ -158,14 +160,14 @@ fn help_flag() {
     Use `uv help` for more details.
 
     ----- stderr -----
-    "###);
+    "#);
 }
 
 #[test]
 fn help_short_flag() {
     let context = TestContext::new_with_versions(&[]);
 
-    uv_snapshot!(context.filters(), context.command().arg("-h"), @r###"
+    uv_snapshot!(context.filters(), context.command().arg("-h"), @r#"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -182,6 +184,7 @@ fn help_short_flag() {
       lock     Update the project's lockfile
       export   Export the project's lockfile to an alternate format
       tree     Display the project's dependency tree
+      license  Display the project's license information
       tool     Run and install commands provided by Python packages
       python   Manage Python versions and installations
       pip      Manage Python packages with a pip-compatible interface
@@ -211,7 +214,7 @@ fn help_short_flag() {
       -v, --verbose...
               Use verbose output
           --color <COLOR_CHOICE>
-              Control colors in output [default: auto] [possible values: auto, always, never]
+              Control the use of color in output [possible values: auto, always, never]
           --native-tls
               Whether to load TLS certificates from the platform's native certificate store [env:
               UV_NATIVE_TLS=]
@@ -237,7 +240,7 @@ fn help_short_flag() {
     Use `uv help` for more details.
 
     ----- stderr -----
-    "###);
+    "#);
 }
 
 #[test]
@@ -347,9 +350,9 @@ fn help_subcommand() {
               (<https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives>)
 
           --color <COLOR_CHOICE>
-              Control colors in output
+              Control the use of color in output.
               
-              [default: auto]
+              By default, uv will automatically detect support for colors when writing to a terminal.
 
               Possible values:
               - auto:   Enables colored output only when the output is going to a terminal or TTY with
@@ -591,9 +594,9 @@ fn help_subsubcommand() {
               (<https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives>)
 
           --color <COLOR_CHOICE>
-              Control colors in output
+              Control the use of color in output.
               
-              [default: auto]
+              By default, uv will automatically detect support for colors when writing to a terminal.
 
               Possible values:
               - auto:   Enables colored output only when the output is going to a terminal or TTY with
@@ -728,7 +731,7 @@ fn help_flag_subcommand() {
       -v, --verbose...
               Use verbose output
           --color <COLOR_CHOICE>
-              Control colors in output [default: auto] [possible values: auto, always, never]
+              Control the use of color in output [possible values: auto, always, never]
           --native-tls
               Whether to load TLS certificates from the platform's native certificate store [env:
               UV_NATIVE_TLS=]
@@ -801,7 +804,7 @@ fn help_flag_subsubcommand() {
       -v, --verbose...
               Use verbose output
           --color <COLOR_CHOICE>
-              Control colors in output [default: auto] [possible values: auto, always, never]
+              Control the use of color in output [possible values: auto, always, never]
           --native-tls
               Whether to load TLS certificates from the platform's native certificate store [env:
               UV_NATIVE_TLS=]
@@ -832,7 +835,7 @@ fn help_flag_subsubcommand() {
 fn help_unknown_subcommand() {
     let context = TestContext::new_with_versions(&[]);
 
-    uv_snapshot!(context.filters(), context.help().arg("foobar"), @r###"
+    uv_snapshot!(context.filters(), context.help().arg("foobar"), @r"
     success: false
     exit_code: 2
     ----- stdout -----
@@ -847,6 +850,7 @@ fn help_unknown_subcommand() {
         lock
         export
         tree
+        license
         tool
         python
         pip
@@ -857,9 +861,9 @@ fn help_unknown_subcommand() {
         self
         version
         generate-shell-completion
-    "###);
+    ");
 
-    uv_snapshot!(context.filters(), context.help().arg("foo").arg("bar"), @r###"
+    uv_snapshot!(context.filters(), context.help().arg("foo").arg("bar"), @r"
     success: false
     exit_code: 2
     ----- stdout -----
@@ -874,6 +878,7 @@ fn help_unknown_subcommand() {
         lock
         export
         tree
+        license
         tool
         python
         pip
@@ -884,7 +889,7 @@ fn help_unknown_subcommand() {
         self
         version
         generate-shell-completion
-    "###);
+    ");
 }
 
 #[test]
@@ -911,7 +916,7 @@ fn help_unknown_subsubcommand() {
 fn help_with_global_option() {
     let context = TestContext::new_with_versions(&[]);
 
-    uv_snapshot!(context.filters(), context.help().arg("--no-cache"), @r###"
+    uv_snapshot!(context.filters(), context.help().arg("--no-cache"), @r#"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -928,6 +933,7 @@ fn help_with_global_option() {
       lock                       Update the project's lockfile
       export                     Export the project's lockfile to an alternate format
       tree                       Display the project's dependency tree
+      license                    Display the project's license information
       tool                       Run and install commands provided by Python packages
       python                     Manage Python versions and installations
       pip                        Manage Python packages with a pip-compatible interface
@@ -958,7 +964,7 @@ fn help_with_global_option() {
       -v, --verbose...
               Use verbose output
           --color <COLOR_CHOICE>
-              Control colors in output [default: auto] [possible values: auto, always, never]
+              Control the use of color in output [possible values: auto, always, never]
           --native-tls
               Whether to load TLS certificates from the platform's native certificate store [env:
               UV_NATIVE_TLS=]
@@ -985,7 +991,7 @@ fn help_with_global_option() {
 
 
     ----- stderr -----
-    "###);
+    "#);
 }
 
 #[test]
@@ -1027,7 +1033,7 @@ fn help_with_no_pager() {
 
     // We can't really test whether the --no-pager option works with a snapshot test.
     // It's still nice to have a test for the option to confirm the option exists.
-    uv_snapshot!(context.filters(), context.help().arg("--no-pager"), @r###"
+    uv_snapshot!(context.filters(), context.help().arg("--no-pager"), @r#"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -1044,6 +1050,7 @@ fn help_with_no_pager() {
       lock                       Update the project's lockfile
       export                     Export the project's lockfile to an alternate format
       tree                       Display the project's dependency tree
+      license                    Display the project's license information
       tool                       Run and install commands provided by Python packages
       python                     Manage Python versions and installations
       pip                        Manage Python packages with a pip-compatible interface
@@ -1074,7 +1081,7 @@ fn help_with_no_pager() {
       -v, --verbose...
               Use verbose output
           --color <COLOR_CHOICE>
-              Control colors in output [default: auto] [possible values: auto, always, never]
+              Control the use of color in output [possible values: auto, always, never]
           --native-tls
               Whether to load TLS certificates from the platform's native certificate store [env:
               UV_NATIVE_TLS=]
@@ -1101,5 +1108,5 @@ fn help_with_no_pager() {
 
 
     ----- stderr -----
-    "###);
+    "#);
 }

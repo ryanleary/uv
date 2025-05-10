@@ -35,6 +35,15 @@ pub enum VersionFormat {
     Json,
 }
 
+#[derive(Debug, Default, Clone, Copy, clap::ValueEnum)]
+pub enum PythonListFormat {
+    /// Plain text (for humans).
+    #[default]
+    Text,
+    /// JSON (for computers).
+    Json,
+}
+
 #[derive(Debug, Default, Clone, clap::ValueEnum)]
 pub enum ListFormat {
     /// Display the list of packages in a human-readable table.
@@ -171,12 +180,13 @@ pub struct GlobalArgs {
     #[arg(global = true, long, hide = true, conflicts_with = "color")]
     pub no_color: bool,
 
-    /// Control colors in output.
+    /// Control the use of color in output.
+    ///
+    /// By default, uv will automatically detect support for colors when writing to a terminal.
     #[arg(
         global = true,
         long,
         value_enum,
-        default_value = "auto",
         conflicts_with = "no_color",
         value_name = "COLOR_CHOICE"
     )]
@@ -612,7 +622,8 @@ pub enum PipCommand {
     /// List, in tabular format, packages installed in an environment.
     #[command(
         after_help = "Use `uv help pip list` for more details.",
-        after_long_help = ""
+        after_long_help = "",
+        alias = "ls"
     )]
     List(PipListArgs),
     /// Show information about one or more installed packages.
@@ -790,6 +801,8 @@ pub enum ProjectCommand {
     Export(ExportArgs),
     /// Display the project's dependency tree.
     Tree(TreeArgs),
+    /// Display the project's license information.
+    License(LicenseArgs),
 }
 
 /// A re-implementation of `Option`, used to avoid Clap's automatic `Option` flattening in
@@ -1173,6 +1186,9 @@ pub struct PipCompileArgs {
     /// Represented as a "target triple", a string that describes the target platform in terms of
     /// its CPU, vendor, and operating system name, like `x86_64-unknown-linux-gnu` or
     /// `aarch64-apple-darwin`.
+    ///
+    /// When targeting macOS (Darwin), the default minimum version is `12.0`. Use
+    /// `MACOSX_DEPLOYMENT_TARGET` to specify a different minimum version, e.g., `13.0`.
     #[arg(long)]
     pub python_platform: Option<TargetTriple>,
 
@@ -1461,6 +1477,9 @@ pub struct PipSyncArgs {
     /// its CPU, vendor, and operating system name, like `x86_64-unknown-linux-gnu` or
     /// `aarch64-apple-darwin`.
     ///
+    /// When targeting macOS (Darwin), the default minimum version is `12.0`. Use
+    /// `MACOSX_DEPLOYMENT_TARGET` to specify a different minimum version, e.g., `13.0`.
+    ///
     /// WARNING: When specified, uv will select wheels that are compatible with the _target_
     /// platform; as a result, the installed distributions may not be compatible with the _current_
     /// platform. Conversely, any distributions that are built from source may be incompatible with
@@ -1740,6 +1759,9 @@ pub struct PipInstallArgs {
     /// its CPU, vendor, and operating system name, like `x86_64-unknown-linux-gnu` or
     /// `aarch64-apple-darwin`.
     ///
+    /// When targeting macOS (Darwin), the default minimum version is `12.0`. Use
+    /// `MACOSX_DEPLOYMENT_TARGET` to specify a different minimum version, e.g., `13.0`.
+    ///
     /// WARNING: When specified, uv will select wheels that are compatible with the _target_
     /// platform; as a result, the installed distributions may not be compatible with the _current_
     /// platform. Conversely, any distributions that are built from source may be incompatible with
@@ -1902,6 +1924,10 @@ pub struct PipFreezeArgs {
     )]
     pub python: Option<Maybe<String>>,
 
+    /// Restrict to the specified installation path for listing packages (can be used multiple times).
+    #[arg(long("path"), value_parser = parse_file_path)]
+    pub paths: Option<Vec<PathBuf>>,
+
     /// List packages in the system Python environment.
     ///
     /// Disables discovery of virtual environments.
@@ -1937,7 +1963,7 @@ pub struct PipListArgs {
     #[arg(long)]
     pub r#exclude: Vec<PackageName>,
 
-    /// Select the output format between: `columns` (default), `freeze`, or `json`.
+    /// Select the output format.
     #[arg(long, value_enum, default_value_t = ListFormat::default())]
     pub format: ListFormat,
 
@@ -2350,8 +2376,8 @@ pub struct VenvArgs {
 
     /// Install seed packages (one or more of: `pip`, `setuptools`, and `wheel`) into the virtual environment.
     ///
-    /// Note `setuptools` and `wheel` are not included in Python 3.12+ environments.
-    #[arg(long)]
+    /// Note that `setuptools` and `wheel` are not included in Python 3.12+ environments.
+    #[arg(long, value_parser = clap::builder::BoolishValueParser::new(), env = EnvVars::UV_VENV_SEED)]
     pub seed: bool,
 
     /// Preserve any existing files or directories at the target path.
@@ -2380,8 +2406,8 @@ pub struct VenvArgs {
     /// the directory name. If not provided (`uv venv`), the prompt is set to
     /// the current directory's name.
     ///
-    /// If "." is provided, the the current directory name will be used
-    /// regardless of whether a path was provided to `uv venv`.
+    /// If "." is provided, the current directory name will be used regardless
+    /// of whether a path was provided to `uv venv`.
     #[arg(long, verbatim_doc_comment)]
     pub prompt: Option<String>,
 
@@ -2447,6 +2473,9 @@ pub struct VenvArgs {
     /// Windows.
     #[arg(long, value_enum, env = EnvVars::UV_LINK_MODE)]
     pub link_mode: Option<uv_install_wheel::linker::LinkMode>,
+
+    #[command(flatten)]
+    pub refresh: RefreshArgs,
 
     #[command(flatten)]
     pub compat_args: compat::VenvCompatArgs,
@@ -2691,6 +2720,12 @@ pub struct RunArgs {
     /// May be provided multiple times.
     #[arg(long)]
     pub no_group: Vec<GroupName>,
+
+    /// Exclude dependencies from default groups.
+    ///
+    /// `--group` can be used to include specific groups.
+    #[arg(long, conflicts_with_all = ["no_group", "only_group"])]
+    pub no_default_groups: bool,
 
     /// Only include dependencies from the specified dependency group.
     ///
@@ -2957,6 +2992,12 @@ pub struct SyncArgs {
     #[arg(long)]
     pub no_group: Vec<GroupName>,
 
+    /// Exclude dependencies from default groups.
+    ///
+    /// `--group` can be used to include specific groups.
+    #[arg(long, conflicts_with_all = ["no_group", "only_group"])]
+    pub no_default_groups: bool,
+
     /// Only include dependencies from the specified dependency group.
     ///
     /// May be provided multiple times.
@@ -3107,6 +3148,13 @@ pub struct LockArgs {
     #[arg(long, conflicts_with = "check_exists", conflicts_with = "check")]
     pub dry_run: bool,
 
+    /// Lock the specified Python script, rather than the current project.
+    ///
+    /// If provided, uv will lock the script (based on its inline metadata table, in adherence with
+    /// PEP 723) to a `.lock` file adjacent to the script itself.
+    #[arg(long)]
+    pub script: Option<PathBuf>,
+
     #[command(flatten)]
     pub resolver: ResolverArgs,
 
@@ -3248,7 +3296,12 @@ pub struct AddArgs {
     /// a new one will be created and added to the script. When executed via `uv run`,
     /// uv will create a temporary environment for the script with all inline
     /// dependencies installed.
-    #[arg(long, conflicts_with = "dev", conflicts_with = "optional")]
+    #[arg(
+        long,
+        conflicts_with = "dev",
+        conflicts_with = "optional",
+        conflicts_with = "package"
+    )]
     pub script: Option<PathBuf>,
 
     /// The Python interpreter to use for resolving and syncing.
@@ -3271,7 +3324,7 @@ pub struct AddArgs {
 pub struct RemoveArgs {
     /// The names of the dependencies to remove (e.g., `ruff`).
     #[arg(required = true)]
-    pub packages: Vec<PackageName>,
+    pub packages: Vec<Requirement<VerbatimParsedUrl>>,
 
     /// Remove the packages from the development dependency group.
     ///
@@ -3390,6 +3443,12 @@ pub struct TreeArgs {
     #[arg(long)]
     pub no_group: Vec<GroupName>,
 
+    /// Exclude dependencies from default groups.
+    ///
+    /// `--group` can be used to include specific groups.
+    #[arg(long, conflicts_with_all = ["no_group", "only_group"])]
+    pub no_default_groups: bool,
+
     /// Only include dependencies from the specified dependency group.
     ///
     /// May be provided multiple times.
@@ -3403,6 +3462,145 @@ pub struct TreeArgs {
     /// `--no-group` can be used to exclude specific groups.
     #[arg(long, conflicts_with_all = [ "group", "only_group" ])]
     pub all_groups: bool,
+
+    /// Assert that the `uv.lock` will remain unchanged.
+    ///
+    /// Requires that the lockfile is up-to-date. If the lockfile is missing or
+    /// needs to be updated, uv will exit with an error.
+    #[arg(long, env = EnvVars::UV_LOCKED, value_parser = clap::builder::BoolishValueParser::new(), conflicts_with = "frozen")]
+    pub locked: bool,
+
+    /// Display the requirements without locking the project.
+    ///
+    /// If the lockfile is missing, uv will exit with an error.
+    #[arg(long, env = EnvVars::UV_FROZEN, value_parser = clap::builder::BoolishValueParser::new(), conflicts_with = "locked")]
+    pub frozen: bool,
+
+    #[command(flatten)]
+    pub build: BuildOptionsArgs,
+
+    #[command(flatten)]
+    pub resolver: ResolverArgs,
+
+    /// Show the dependency tree the specified PEP 723 Python script, rather than the current
+    /// project.
+    ///
+    /// If provided, uv will resolve the dependencies based on its inline metadata table, in
+    /// adherence with PEP 723.
+    #[arg(long)]
+    pub script: Option<PathBuf>,
+
+    /// The Python version to use when filtering the tree.
+    ///
+    /// For example, pass `--python-version 3.10` to display the dependencies
+    /// that would be included when installing on Python 3.10.
+    ///
+    /// Defaults to the version of the discovered Python interpreter.
+    #[arg(long, conflicts_with = "universal")]
+    pub python_version: Option<PythonVersion>,
+
+    /// The platform to use when filtering the tree.
+    ///
+    /// For example, pass `--platform windows` to display the dependencies that
+    /// would be included when installing on Windows.
+    ///
+    /// Represented as a "target triple", a string that describes the target
+    /// platform in terms of its CPU, vendor, and operating system name, like
+    /// `x86_64-unknown-linux-gnu` or `aarch64-apple-darwin`.
+    #[arg(long, conflicts_with = "universal")]
+    pub python_platform: Option<TargetTriple>,
+
+    /// The Python interpreter to use for locking and filtering.
+    ///
+    /// By default, the tree is filtered to match the platform as reported by
+    /// the Python interpreter. Use `--universal` to display the tree for all
+    /// platforms, or use `--python-version` or `--python-platform` to override
+    /// a subset of markers.
+    ///
+    /// See `uv help python` for details on Python discovery and supported
+    /// request formats.
+    #[arg(
+        long,
+        short,
+        env = EnvVars::UV_PYTHON,
+        verbatim_doc_comment,
+        help_heading = "Python options",
+        value_parser = parse_maybe_string,
+    )]
+    pub python: Option<Maybe<String>>,
+}
+
+#[derive(Args)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct LicenseArgs {
+    /// Show full list of platform-independent dependency licenses.
+    ///
+    /// Shows resolved package versions for all Python versions and platforms,
+    /// rather than filtering to those that are relevant for the current
+    /// environment.
+    ///
+    /// Multiple versions may be shown for a each package.
+    #[arg(long)]
+    pub universal: bool,
+
+    /// Include the development dependency group.
+    ///
+    /// Development dependencies are defined via `dependency-groups.dev` or
+    /// `tool.uv.dev-dependencies` in a `pyproject.toml`.
+    ///
+    /// This option is an alias for `--group dev`.
+    #[arg(long, overrides_with("no_dev"), hide = true)]
+    pub dev: bool,
+
+    /// Only include the development dependency group.
+    ///
+    /// Omit other dependencies. The project itself will also be omitted.
+    ///
+    /// This option is an alias for `--only-group dev`.
+    #[arg(long, conflicts_with("no_dev"))]
+    pub only_dev: bool,
+
+    /// Omit the development dependency group.
+    ///
+    /// This option is an alias for `--no-group dev`.
+    #[arg(long, overrides_with("dev"))]
+    pub no_dev: bool,
+
+    /// Include dependencies from the specified dependency group.
+    ///
+    /// May be provided multiple times.
+    #[arg(long, conflicts_with("only_group"))]
+    pub group: Vec<GroupName>,
+
+    /// Exclude dependencies from the specified dependency group.
+    ///
+    /// May be provided multiple times.
+    #[arg(long)]
+    pub no_group: Vec<GroupName>,
+
+    /// Exclude dependencies from default groups.
+    ///
+    /// `--group` can be used to include specific groups.
+    #[arg(long, conflicts_with_all = ["no_group", "only_group"])]
+    pub no_default_groups: bool,
+
+    /// Only include dependencies from the specified dependency group.
+    ///
+    /// May be provided multiple times.
+    ///
+    /// The project itself will also be omitted.
+    #[arg(long, conflicts_with("group"))]
+    pub only_group: Vec<GroupName>,
+
+    /// Include dependencies from all dependency groups.
+    ///
+    /// `--no-group` can be used to exclude specific groups.
+    #[arg(long, conflicts_with_all = [ "group", "only_group" ])]
+    pub all_groups: bool,
+
+    /// Display only direct dependencies (default false)
+    #[arg(long)]
+    pub direct_deps_only: bool,
 
     /// Assert that the `uv.lock` will remain unchanged.
     ///
@@ -3546,6 +3744,12 @@ pub struct ExportArgs {
     #[arg(long)]
     pub no_group: Vec<GroupName>,
 
+    /// Exclude dependencies from default groups.
+    ///
+    /// `--group` can be used to include specific groups.
+    #[arg(long, conflicts_with_all = ["no_group", "only_group"])]
+    pub no_default_groups: bool,
+
     /// Only include dependencies from the specified dependency group.
     ///
     /// May be provided multiple times.
@@ -3628,6 +3832,14 @@ pub struct ExportArgs {
 
     #[command(flatten)]
     pub refresh: RefreshArgs,
+
+    /// Export the dependencies for the specified PEP 723 Python script, rather than the current
+    /// project.
+    ///
+    /// If provided, uv will resolve the dependencies based on its inline metadata table, in
+    /// adherence with PEP 723.
+    #[arg(long, conflicts_with_all = ["all_packages", "package", "no_emit_project", "no_emit_workspace"])]
+    pub script: Option<PathBuf>,
 
     /// The Python interpreter to use during resolution.
     ///
@@ -3716,6 +3928,7 @@ pub enum ToolCommand {
     #[command(alias = "update")]
     Upgrade(ToolUpgradeArgs),
     /// List installed tools.
+    #[command(alias = "ls")]
     List(ToolListArgs),
     /// Uninstall a tool.
     Uninstall(ToolUninstallArgs),
@@ -4195,6 +4408,7 @@ pub enum PythonCommand {
     /// Use `--all-versions` to view all available patch versions.
     ///
     /// Use `--only-installed` to omit available downloads.
+    #[command(alias = "ls")]
     List(PythonListArgs),
 
     /// Download and install Python versions.
@@ -4288,6 +4502,10 @@ pub struct PythonListArgs {
     /// By default, these display as `<download available>`.
     #[arg(long)]
     pub show_urls: bool,
+
+    /// Select the output format.
+    #[arg(long, value_enum, default_value_t = PythonListFormat::default())]
+    pub output_format: PythonListFormat,
 }
 
 #[derive(Args)]
@@ -4486,8 +4704,8 @@ pub struct GenerateShellCompletionArgs {
     pub quiet: bool,
     #[arg(long, short, action = clap::ArgAction::Count, conflicts_with = "quiet", hide = true)]
     pub verbose: u8,
-    #[arg(long, default_value = "auto", conflicts_with = "no_color", hide = true)]
-    pub color: ColorChoice,
+    #[arg(long, conflicts_with = "no_color", hide = true)]
+    pub color: Option<ColorChoice>,
     #[arg(long, hide = true)]
     pub native_tls: bool,
     #[arg(long, hide = true)]
@@ -4561,6 +4779,7 @@ pub struct IndexArgs {
         long,
         short,
         env = EnvVars::UV_FIND_LINKS,
+        value_delimiter = ',',
         value_parser = parse_find_links,
         help_heading = "Index options"
     )]

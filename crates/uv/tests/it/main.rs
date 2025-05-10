@@ -17,7 +17,7 @@ mod cache_clean;
 #[cfg(all(feature = "python", feature = "pypi"))]
 mod cache_prune;
 
-#[cfg(all(feature = "python", feature = "pypi"))]
+#[cfg(all(feature = "python", feature = "pypi", feature = "test-ecosystem"))]
 mod ecosystem;
 
 #[cfg(all(feature = "python", feature = "pypi"))]
@@ -30,6 +30,9 @@ mod help;
 
 #[cfg(all(feature = "python", feature = "pypi"))]
 mod init;
+
+#[cfg(all(feature = "python", feature = "pypi"))]
+mod license;
 
 #[cfg(all(feature = "python", feature = "pypi"))]
 mod lock;

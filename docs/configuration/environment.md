@@ -96,6 +96,10 @@ updating the `uv.lock` file.
 
 Equivalent to the `--token` argument for self update. A GitHub token for authentication.
 
+### `UV_GIT_LFS`
+
+Enables fetching files stored in Git LFS when installing a package from a Git repository.
+
 ### `UV_HTTP_TIMEOUT`
 
 Timeout (in seconds) for HTTP requests. (default: 30 s)
@@ -316,10 +320,6 @@ uv will require that all dependencies have a hash specified in the requirements 
 Equivalent to the `--resolution` command-line argument. For example, if set to
 `lowest-direct`, uv will install the lowest compatible versions of all direct dependencies.
 
-### `UV_STACK_SIZE`
-
-Use to increase the stack size used by uv in debug builds on Windows.
-
 ### `UV_SYSTEM_PYTHON`
 
 Equivalent to the `--system` command-line argument. If set to `true`, uv will
@@ -340,6 +340,13 @@ Specifies the directory where uv stores managed tools.
 
 Used ephemeral environments like CI to install uv to a specific path while preventing
 the installer from modifying shell profiles or environment variables.
+
+### `UV_VENV_SEED`
+
+Install seed packages (one or more of: `pip`, `setuptools`, and `wheel`) into the virtual environment
+created by `uv venv`.
+
+Note that `setuptools` and `wheel` are not included in Python 3.12+ environments.
 
 
 
@@ -479,6 +486,16 @@ For example:
 
 See the [tracing documentation](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#example-syntax)
 for more.
+
+### `RUST_MIN_STACK`
+
+Use to set the stack size used by uv.
+
+The value is in bytes, and the default is typically 2MB (2097152).
+Unlike the normal `RUST_MIN_STACK` semantics, this can affect main thread
+stack size, because we actually spawn our own main2 thread to work around
+the fact that Windows' real main thread is only 1MB. That thread has size
+`max(RUST_MIN_STACK, 4MB)`.
 
 ### `SHELL`
 

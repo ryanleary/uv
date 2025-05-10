@@ -34,23 +34,26 @@ impl DependencyMetadata {
                 .iter()
                 .find(|v| v.version.as_ref() == Some(version))
                 .inspect(|_| {
-                    debug!("Found dependency metadata entry for `{package}=={version}`",);
+                    debug!("Found dependency metadata entry for `{package}=={version}`");
                 })
                 .or_else(|| versions.iter().find(|v| v.version.is_none()))
                 .inspect(|_| {
-                    debug!("Found global metadata entry for `{package}`",);
+                    debug!("Found global metadata entry for `{package}`");
                 });
             let Some(metadata) = metadata else {
                 warn!("No dependency metadata entry found for `{package}=={version}`");
                 return None;
             };
-            debug!("Found dependency metadata entry for `{package}=={version}`",);
+            debug!("Found dependency metadata entry for `{package}=={version}`");
             Some(ResolutionMetadata {
                 name: metadata.name.clone(),
                 version: version.clone(),
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
+                dynamic: false,
+                classifiers: metadata.classifiers.clone(),
+                license: metadata.license.clone(),
             })
         } else {
             // If no version was requested (i.e., it's a direct URL dependency), allow a single
@@ -70,6 +73,9 @@ impl DependencyMetadata {
                 requires_dist: metadata.requires_dist.clone(),
                 requires_python: metadata.requires_python.clone(),
                 provides_extras: metadata.provides_extras.clone(),
+                dynamic: false,
+                classifiers: metadata.classifiers.clone(),
+                license: metadata.license.clone(),
             })
         }
     }
@@ -109,4 +115,6 @@ pub struct StaticMetadata {
     pub requires_python: Option<VersionSpecifiers>,
     #[serde(default)]
     pub provides_extras: Vec<ExtraName>,
+    pub classifiers: Option<Vec<String>>,
+    pub license: Option<String>,
 }
